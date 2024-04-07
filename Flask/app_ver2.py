@@ -1,6 +1,4 @@
-# //#4 Producer_string.ipynb 파일에서 RabbitMQ로 송신하는 메시지를 실시간으로 수신해서 웹페이지에 보이도록 하기(단, 새로고침 없이!!)
-
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 from flask_socketio import SocketIO, emit
 import pika
 
@@ -10,12 +8,13 @@ socketio = SocketIO(app)
 messages = []
 
 def callback(ch, method, properties, body):
-    messages.append(body.decode())
-    socketio.emit('new_message', {'message': body.decode()}, namespace='/')  # 수정된 부분: 네임스페이스 추가
+    message = body.decode()
+    messages.append(message)
+    socketio.emit('message', {'message': message}, namespace='/console')
 
 @app.route('/')
 def index():
-    return render_template('index.html', messages=messages)  # 수정된 부분: index.html로 메시지들을 함께 전달
+    return render_template('index.html')
 
 @app.route('/console')
 def console():
@@ -31,4 +30,4 @@ def consume_messages():
 
 if __name__ == '__main__':
     socketio.start_background_task(consume_messages)
-    socketio.run(app)
+    socketio.run(app, debug=False)
