@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>RabbitMQ Console</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.js"></script>
+    <!-- Socket.IO 라이브러리 추가 -->
+    <script src="https://apis.openapi.sk.com/tmap/vectorjs?version=1&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu"></script>
+    <!-- TMAP API 스크립트 추가 -->
+
+    <style>
+      #map_div {
+        width: 80%;
+        height: 400px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Welcome to RabbitMQ Console</h1>
+    <div id="map_div"></div>
+
+    <script>
+      var map;
+
+      // TMAP 초기화 함수
+      function initTmap() {
+        map = new Tmapv3.Map("map_div", {
+          center: new Tmapv3.LatLng(37.5665, 126.978), // 초기 위치 설정: 서울
+          width: "80%",
+          height: "400px",
+          zoom: 14, // 초기 줌 레벨
+        });
+      }
+
+      // 실시간으로 RabbitMQ로부터 좌표를 받아 지도에 표시하는 함수
+      function updateMap(latitude, longitude) {
+        var userLocation = new Tmapv3.LatLng(latitude, longitude);
+        var marker = new Tmapv3.Marker({
+          icon: "https://cdn-icons-png.flaticon.com/128/14975/14975104.png",
+          // title: "title",
+          label: "car2",
+          position: userLocation,
+          map: map,
+        });
+        map.setCenter(userLocation);
+      }
+
+      // 소켓 연결
+      var socket = io(); // 소켓 연결
+
+      socket.on("connect", function () {
+        console.log("Connected to server");
+      });
+
+      // RabbitMQ로부터 새로운 메시지를 받았을 때 호출되는 콜백 함수
+      socket.on("new_message", function (data) {
+        var message = data.message;
+        // 메시지를 파싱해서 위도와 경도를 추출
+        // 메시지를 파싱해서 위도와 경도를 추출
+        var latitude = parseFloat(message.match(/Latitude: ([^,]*)/)[1]);
+        var longitude = parseFloat(message.match(/Longitude: ([^,]*)/)[1]);
+        // var coordinates = message.split(": ");
+        // var latitude = "37.35"; //parseFloat(coordinates[1]);
+        // var longitude = "127.24"; //"parseFloat(coordinates[3]);
+        updateMap(latitude, longitude); // 받은 좌표로 지도 업데이트
+      });
+
+      window.onload = initTmap; // 페이지 로드 시 TMAP 지도 초기화
+    </script>
+  </body>
+</html>
