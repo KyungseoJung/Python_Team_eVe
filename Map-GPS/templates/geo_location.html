@@ -1,0 +1,32 @@
+<!-- //#5 현재 내 위치를 GPS로 받아와서 TMAP 지도 시각화 -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>위치 권한 요청</title>
+  </head>
+  <body>
+    <h1>현재 위치를 받아오기 위해 위치 권한이 필요합니다.</h1>
+    <button onclick="getLocation()">위치 권한 요청</button>
+
+    <script>
+      function getLocation() {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            function (position) {
+              alert(
+                "위치 권한이 허용되었습니다. 현재 위치를 받아오고 지도에 표시합니다."
+              );
+              window.location.href = "/";
+            },
+            function (error) {
+              alert("위치 권한을 허용해야 현재 위치를 받아올 수 있습니다.");
+            }
+          );
+        } else {
+          alert("Geolocation is not supported by this browser.");
+        }
+      }
+    </script>
+  </body>
+</html>
