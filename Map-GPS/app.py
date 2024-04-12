@@ -5,7 +5,7 @@ app = Flask(__name__)
 # //#5 TMAP으로 지도 시각화
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index_map_gps.html')
 
 # //#5 현재 내 위치를 GPS로 받아와서 TMAP 지도 시각화
 @app.route('/get_location') 
