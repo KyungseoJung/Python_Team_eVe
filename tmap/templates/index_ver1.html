@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>T-map 경로 시각화</title>
+  </head>
+  <body>
+    <h1>T-map 경로 시각화</h1>
+    <form id="routeForm">
+      <label for="start_point">출발점:</label>
+      <input type="text" id="start_point" name="start_point" /><br /><br />
+      <label for="end_point">도착점:</label>
+      <input type="text" id="end_point" name="end_point" /><br /><br />
+      <button type="submit">경로 찾기</button>
+    </form>
+
+    <div id="map"></div>
+
+    <script>
+      document
+        .getElementById("routeForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          var start_point = document.getElementById("start_point").value;
+          var end_point = document.getElementById("end_point").value;
+
+          fetch("/get_route", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+              start_point: start_point,
+              end_point: end_point,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              console.log(data);
+              // 여기서 T-map에 Polyline을 그리고, 좌표값들을 사용하여 처리할 수 있습니다.
+            })
+            .catch((error) => console.error("Error:", error));
+        });
+    </script>
+  </body>
+</html>

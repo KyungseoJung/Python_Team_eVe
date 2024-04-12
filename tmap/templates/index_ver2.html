@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>T-map Polyline Visualizer</title>
+  </head>
+  <body>
+    <h1>T-map Polyline Visualizer</h1>
+    <form action="/visualize" method="post">
+      <label for="start_point">출발점 좌표:</label>
+      <input
+        type="text"
+        id="start_point"
+        name="start_point"
+        value="37.566295,126.977945"
+        required
+      /><br /><br />
+      <label for="end_point">도착점 좌표:</label>
+      <input
+        type="text"
+        id="end_point"
+        name="end_point"
+        value="37.555946,126.972278"
+        required
+      /><br /><br />
+      <button type="submit">시각화</button>
+    </form>
+  </body>
+</html>
