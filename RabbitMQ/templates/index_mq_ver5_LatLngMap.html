@@ -20,6 +20,7 @@
 
     <script>
       var map;
+      var marker; // #10 마커 변수 추가 - 기존에 이미 그려진  마커가 있는지 확인
 
       // TMAP 초기화 함수
       function initTmap() {
@@ -34,7 +35,11 @@
       // 실시간으로 RabbitMQ로부터 좌표를 받아 지도에 표시하는 함수
       function updateMap(latitude, longitude) {
         var userLocation = new Tmapv3.LatLng(latitude, longitude);
-        var marker = new Tmapv3.Marker({
+        // #10 기존의 마커가 존재한다면 지우고 새로운 위치에 마커를 생성
+        if (marker) {
+          marker.setMap(null);
+        }
+        marker = new Tmapv3.Marker({
           icon: "https://cdn-icons-png.flaticon.com/128/14975/14975104.png",
           // title: "title",
           label: "car2",
@@ -56,6 +61,7 @@
         var message = data.message;
         // 메시지를 파싱해서 위도와 경도를 추출
         // 메시지를 파싱해서 위도와 경도를 추출
+        // 수신받는 데이터 모양: Latitude: 37.33, Longitude: 127.24
         var latitude = parseFloat(message.match(/Latitude: ([^,]*)/)[1]);
         var longitude = parseFloat(message.match(/Longitude: ([^,]*)/)[1]);
         // var coordinates = message.split(": ");
