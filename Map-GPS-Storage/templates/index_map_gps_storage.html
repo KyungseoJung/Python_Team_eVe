@@ -38,6 +38,22 @@
 
         localStorage.setItem("locations", JSON.stringify(storedLocations));
         localStorage.setItem("recent", JSON.stringify(data)); // 최근 위치 데이터를 업데이트
+
+        // #11-4 추가: 파일로 저장
+        saveLocationsToFile(storedLocations);
+      }
+
+      // #11-4 추가: 위치 데이터를 파일로 저장하는 함수
+      function saveLocationsToFile(storedLocations) {
+        var dataStr =
+          "data:text/json;charset=utf-8," +
+          encodeURIComponent(JSON.stringify(storedLocations));
+        var downloadAnchorNode = document.createElement("a");
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", "locations.json");
+        document.body.appendChild(downloadAnchorNode); // 필요한 경우 링크를 만들기 위해 body에 추가
+        downloadAnchorNode.click(); // 클릭하여 다운로드
+        downloadAnchorNode.remove(); // 다운로드 후 링크 제거
       }
 
       // #11-2 저장한 위치 데이터 확인
@@ -100,7 +116,7 @@
         // 사용자 위치 받아오기
         if (navigator.geolocation) {
           // #11 3초마다 사용자 위치 받아서 console창에 표시하기
-          setInterval(getUserPos, 30000);
+          // setInterval(getUserPos, 30000);  // 한번 켜고 실행하면 계속 저장됨
         } else {
           // #5 만약 사용자 위치를 받아오지 못 했다면
           alert("Geolocation is not supported by this browser.");
