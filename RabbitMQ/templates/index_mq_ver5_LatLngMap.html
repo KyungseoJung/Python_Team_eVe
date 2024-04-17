@@ -20,7 +20,7 @@
 
     <script>
       var map;
-      var marker; // #10 마커 변수 추가 - 기존에 이미 그려진  마커가 있는지 확인
+      var marker; // #10 마커 변수 추가 - 기존에 이미 그려진 마커가 있는지 확인 - 있다면 삭제.제거.
 
       // TMAP 초기화 함수
       function initTmap() {
@@ -42,7 +42,7 @@
         marker = new Tmapv3.Marker({
           icon: "https://cdn-icons-png.flaticon.com/128/14975/14975104.png",
           // title: "title",
-          label: "car2",
+          label: "배달 중",
           position: userLocation,
           map: map,
         });
