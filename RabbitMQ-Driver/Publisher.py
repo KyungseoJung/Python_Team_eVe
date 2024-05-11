@@ -1,0 +1,37 @@
+from flask import Flask, render_template, request, redirect, url_for
+import pika
+
+app = Flask(__name__)
+
+# 구조 설정
+exchange_name = ''     #7 데이터를 전송할 exchange의 이름을 설정
+queue_name = 'realtime_location_queue'       #7 queue 이름 설정 - 수신할 때 필요***
+server_url = 'localhost'
+
+#RabbitMQ 서버에 연결
+#connection과 channel를 생성
+connection = pika.BlockingConnection(pika.ConnectionParameters(host=server_url))
+channel = connection.channel()
+
+#queue_declare: channel를 통해 queue 선언(declare)
+channel.queue_declare(queue=queue_name)
+
+# 여기부터가 핵심 - 반응형 RabbitMQ 송신
+# 웹페이지에서 데이터 입력 -> 버튼 눌러 -> 여기서 데이터 받아서 -> RabbitMQ로 송신 
+# 웹 페이지 라우트
+@app.route('/')
+def index():
+    return render_template('index_mq_ver2_sendCurrentPos.html')
+
+# 데이터를 받아서 RabbitMQ로 송신
+@app.route('/send_location', methods=['POST'])
+def sendData():
+    latitude = request.form['latitude']
+    longitude = request.form['longitude']
+    message = f'Latitude: {latitude}, Longitude: {longitude}'
+    channel.basic_publish(exchange=exchange_name, routing_key=queue_name, body=message)
+    return redirect(url_for('index'))
+
+if __name__ == '__main__':
+    app.run(debug=True)
+    # app.run(debug=True, port=5001)  # 다른 포트(예: 5001)를 지정하여 실행
