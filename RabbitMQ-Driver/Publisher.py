@@ -1,5 +1,7 @@
 # //#12 (Driver 입장) 사용자의 실시간 위치를 html에서 얻어 Flask로 보내고, Flask에서는 실시간 위치 데이터를 RabbitMQ로 송신
 # //#12 fix: (Driver 입장) 사용자의 실시간 위치를 html에서 얻어 (Flask를 거치지 않고) 바로 RabbitMQ로 송신 
+# //#14 Flask를 거치지 않고, Node.js가 서버로 작동해 RabbitMQ로 데이터를 송신하는 코드를 구현(Node.js 설치 및 실행) 
+
 
 from flask import Flask, render_template, request, redirect, url_for
 import pika

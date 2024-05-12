@@ -1,3 +1,5 @@
+//#14 Flask를 거치지 않고, Node.js가 서버로 작동해 RabbitMQ로 데이터를 송신하는 코드를 구현(Node.js 설치 및 실행)
+
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");

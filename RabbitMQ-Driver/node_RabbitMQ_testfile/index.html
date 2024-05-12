@@ -1,0 +1,30 @@
+<!-- //#14 Flask를 거치지 않고, Node.js가 서버로 작동해 RabbitMQ로 데이터를 송신하는 코드를 구현(Node.js 설치 및 실행) -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Real-time Location Publisher</title>
+  </head>
+  <body>
+    <h1>Real-time Location Publisher</h1>
+    <button onclick="getUserPos()">Send My Location</button>
+    <script>
+      function getUserPos() {
+        navigator.geolocation.getCurrentPosition(function (position) {
+          const latitude = position.coords.latitude;
+          const longitude = position.coords.longitude;
+          console.log("Location:", latitude, longitude);
+          sendLocation(latitude, longitude);
+        });
+      }
+
+      function sendLocation(lat, lng) {
+        fetch(`http://localhost:3000?latitude=${lat}&longitude=${lng}`);
+      }
+
+      // 3초마다 사용자 위치를 서버로 전송
+      setInterval(getUserPos, 3000);
+    </script>
+  </body>
+</html>
