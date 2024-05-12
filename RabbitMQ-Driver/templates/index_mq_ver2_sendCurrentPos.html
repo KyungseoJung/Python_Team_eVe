@@ -1,7 +1,9 @@
+<!-- //#12 T-Map appkey = 5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu -->
 <!--  -->
 <!--  -->
 <!--  -->
-<!-- 내 위치 보내기 -->
+<!-- 위치 송신 -->
+<!-- //#12 (Driver 입장) 사용자의 실시간 위치를 html에서 얻어 Flask로 보내고, Flask에서는 실시간 위치 데이터를 RabbitMQ로 송신 -->
 
 <!DOCTYPE html>
 <html>
@@ -24,27 +26,13 @@
     <script>
       var map;
       // RabbitMQ로 위치 데이터 송신
-      // function sendDataToProducer(lat, lng) {
-      //   // 예시로 랜덤한 위도와 경도 값 생성
-      //   var _lat = lat;
-      //   var _lng = lng;
-
-      //   // XMLHttpRequest 객체 생성
-      //   var xhr = new XMLHttpRequest();
-
-      //   // POST 방식으로 데이터 전송
-      //   xhr.open("POST", "/send_location", true);
-
-      //   // 전송할 데이터 설정
-      //   var data = new FormData();
-      //   data.append("latitude", _lat);
-      //   data.append("longitude", _lng);
-
-      //   // 요청 보내기
-      //   xhr.send(data);
-      // }
-
-      function sendDataToRabbitMQ(lat, lng) {}
+      function sendDataToProducer(lat, lng) {
+        var xhr = new XMLHttpRequest();
+        // Assuming the Node.js server is on localhost and port 3000
+        xhr.open("POST", "http://localhost:3000/send_location", true);
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        xhr.send(JSON.stringify({ latitude: lat, longitude: lng }));
+      }
 
       // function sendLocationToFlask(latitude, longitude) {
       //   fetch("/sendData", {
