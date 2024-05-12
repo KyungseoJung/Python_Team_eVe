@@ -29,10 +29,19 @@
       // RabbitMQ로 위치 데이터 송신
       function sendDataToProducer(lat, lng) {
         var xhr = new XMLHttpRequest();
+        // #14 XMLHttpRequest 객체 생성: 브라우저에서 제공하는 XMLHttpRequest 객체를 이용하여 HTTP 요청을 서버로 보낼 수 있음.
+
         // Assuming the Node.js server is on localhost and port 3000
         xhr.open("POST", "http://localhost:3000/send_location", true);
+        // #14 요청 설정: xhr.open 메소드를 사용하여 POST 요청을 설정.
+        // 이 예에서는 서버의 주소가 'localhost'이며 포트는 '3000'이다. URL 경로는 /send_location으로, 이는 서버에서 해당 위치 데이터를 받아 처리할 엔드포인트이다.
+
         xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        // #14 헤더 설정: xhr.setRequestHeader를 사용하여 요청의 내용 유형(Content-Type)을 'application/json;charset=UTF-8'로 설정.
+        // 이것은 보내는 데이터가 JSON 형식임을 나타냄.
+
         xhr.send(JSON.stringify({ latitude: lat, longitude: lng }));
+        // #14 데이터 전송: xhr.send 메소드에 JSON 문자열로 변환된 데이터 객체를 전달하여 서버로 보냄. 데이터 객체는 { latitude: lat, longitude: lng } 형태로, 사용자의 위도와 경도를 포함하고 있다.
       }
 
       // function sendLocationToFlask(latitude, longitude) {
