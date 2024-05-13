@@ -30,7 +30,8 @@ app = Flask(__name__)
 @app.route('/')
 def index():
     # return render_template('index_mq_ver1_sendCurrentPos.html') # //#12
-    return render_template('index_mq_ver2_sendCurrentPos.html') # //#12 fix
+    # return render_template('index_mq_ver2_sendCurrentPos.html') # //#12 fix
+    return render_template('index_mq_ver3_sendCurrentPos.html') # //#15
 
 
 # 데이터를 받아서 RabbitMQ로 송신

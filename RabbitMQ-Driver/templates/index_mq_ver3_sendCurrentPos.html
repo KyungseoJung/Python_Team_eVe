@@ -1,0 +1,104 @@
+<!-- T-Map appkey = 5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!-- 위치 송신 -->
+<!-- //#12 (Driver 입장) 사용자의 실시간 위치를 html에서 얻어 Flask로 보내고, Flask에서는 실시간 위치 데이터를 RabbitMQ로 송신 -->
+<!-- //#15 (Driver 입장) STOMP 프로토콜을 이용해 Web에서 직접 RabbitMQ와 통신 (Flask를 거치지 않고) -->
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Publisher - 배달 기사 화면</title>
+    <!-- TMAP API 스크립트 추가 -->
+    <script src="https://apis.openapi.sk.com/tmap/vectorjs?version=1&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu"></script>
+    <!-- //#15 Include the STOMP JavaScript client -->
+    <!-- 버전이나 올바른 파일이 확실하지 않은 경우 stomp.jsCDN에서 로드하여 문제 해결 -->
+    <!-- HTML에서 의 스크립트 태그를 stomp.js위 줄로 바꾸고 를 사용하는 스크립트 앞에 위치하도록  -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+      #map_div {
+        width: 100%;
+        height: 500px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Publisher - 배달 기사 화면(위치를 RabbitMQ로 송신)</h1>
+    <div id="map_div"></div>
+
+    <script>
+      var map;
+      var stompClient; // #15
+
+      // #15 connectToRabbitMQ 함수
+      function connectToRabbitMQ() {
+        var ws = new WebSocket("ws://127.0.0.1:15674/ws");
+        // (변경 필요) Change this URL to your RabbitMQ WebSocket endpoint
+        stompClient = Stomp.over(ws);
+
+        stompClient.connect(
+          "guest",
+          "guest",
+          function (frame) {
+            console.log("Connected: " + frame);
+          },
+          function (error) {
+            console.log("Error connecting to WebSocket: " + error);
+          }
+        );
+      }
+      // #15 STOMP 프로토콜을 이용해 RabbitMQ로 위치 데이터 송신
+      function sendDataToRabbitMQ(lat, lng) {
+        var locationData = JSON.stringify({ latitude: lat, longitude: lng });
+        stompClient.send("/topic/locationUpdate", {}, locationData);
+        console.log("Sent location data to RabbitMQ:", locationData);
+      }
+
+      function getUserPos() {
+        navigator.geolocation.getCurrentPosition(function (position) {
+          var userLocation = new Tmapv3.LatLng(
+            position.coords.latitude,
+            position.coords.longitude
+          );
+          var marker = new Tmapv3.Marker({
+            position: userLocation,
+            map: map,
+          });
+          map.setCenter(userLocation);
+          console.log("얻은 위치 데이터: ", userLocation);
+
+          // 현재 위치를 Flask로 송신
+          sendDataToRabbitMQ(
+            position.coords.latitude,
+            position.coords.longitude
+          );
+        });
+      }
+      function initTmap() {
+        map = new Tmapv3.Map("map_div", {
+          center: new Tmapv3.LatLng(37.5665, 126.978), // 서울을 기준으로 초기화
+          width: "100%",
+          height: "800px",
+          zoom: 16, // 초기 줌 레벨
+        });
+
+        // #15 html 페이지 열릴 때, RabbitMQ와 연결하는 코드 실행
+        connectToRabbitMQ();
+
+        // 사용자 위치 받아오기
+        if (navigator.geolocation) {
+          // #11 3초마다 사용자 위치 받아서 console창에 표시하기
+          setInterval(getUserPos, 3000); // 한번 켜고 실행하면 계속 저장됨
+        } else {
+          // #5 만약 사용자 위치를 받아오지 못 했다면
+          alert("Geolocation is not supported by this browser.");
+        }
+      }
+
+      // 실행되는 코드 부분
+      window.onload = initTmap; // 페이지 로드 시 TMAP 지도 초기화
+    </script>
+  </body>
+</html>
