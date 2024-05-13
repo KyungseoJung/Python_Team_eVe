@@ -31,10 +31,10 @@
         var xhr = new XMLHttpRequest();
         // #14 XMLHttpRequest 객체 생성: 브라우저에서 제공하는 XMLHttpRequest 객체를 이용하여 HTTP 요청을 서버로 보낼 수 있음.
 
-        // Assuming the Node.js server is on localhost and port 3000
-        xhr.open("POST", "http://localhost:3000/send_location", true);
+        // Assuming the Node.js server is on localhost and port 3001  // #14 fix: PORT 번호 변경(3000->3001)
+        xhr.open("POST", "http://localhost:3001/send_location", true);
         // #14 요청 설정: xhr.open 메소드를 사용하여 POST 요청을 설정.
-        // 이 예에서는 서버의 주소가 'localhost'이며 포트는 '3000'이다. URL 경로는 /send_location으로, 이는 서버에서 해당 위치 데이터를 받아 처리할 엔드포인트이다.
+        // 이 예에서는 서버의 주소가 'localhost'이며 포트는 '3001'이다. URL 경로는 /send_location으로, 이는 서버에서 해당 위치 데이터를 받아 처리할 엔드포인트이다.
 
         xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
         // #14 헤더 설정: xhr.setRequestHeader를 사용하여 요청의 내용 유형(Content-Type)을 'application/json;charset=UTF-8'로 설정.
@@ -91,7 +91,7 @@
         // 사용자 위치 받아오기
         if (navigator.geolocation) {
           // #11 3초마다 사용자 위치 받아서 console창에 표시하기
-          setInterval(getUserPos, 3000); // 한번 켜고 실행하면 계속 저장됨
+          setInterval(getUserPos, 3000); // 한번 켜고 실행하면 계속 저장됨 (3초 설정)
         } else {
           // #5 만약 사용자 위치를 받아오지 못 했다면
           alert("Geolocation is not supported by this browser.");
