@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>WebSocket Data Receiver</title>
+    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var socket = io.connect("http://localhost:3000");
+
+        socket.on("connect", function () {
+          console.log("Connected to the WebSocket server!");
+        });
+
+        // Listening for 'new_message' events from the server
+        socket.on("new_message", function (data) {
+          console.log("Received message:", data.message);
+          // Displaying the received message in the console
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <h1>WebSocket Data Receiver</h1>
+    <p>Check your browser console for received messages.</p>
+  </body>
+</html>

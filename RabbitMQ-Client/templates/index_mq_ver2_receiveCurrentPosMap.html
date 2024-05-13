@@ -1,0 +1,75 @@
+<!-- //#13 RabbitMQ로부터 데이터 수신, 그 후 지도 표시 -->
+<!-- //#15 Flask를 거치지 않고, Node.js가 서버로 작동해 RabbitMQ로부터 데이터를 수신받는 코드를 구현(Node.js 설치 및 실행) -->
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Subscriber - 고객 화면</title>
+    <!-- Socket.IO 라이브러리 추가 -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.js"></script> -->
+    <!-- TMAP API 스크립트 추가 -->
+    <script src="https://apis.openapi.sk.com/tmap/vectorjs?version=1&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu"></script>
+    <!-- Load the Socket.IO client library from your local server -->
+    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+
+    <style>
+      #map_div {
+        width: 80%;
+        height: 400px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Subscriber - 고객 화면(움직이는 배달기사 확인)</h1>
+    <div id="map_div"></div>
+
+    <script>
+      var map;
+      var marker; // #10 마커 변수 추가 - 기존에 이미 그려진 마커가 있는지 확인 - 있다면 삭제.제거.
+
+      // TMAP 초기화 함수
+      function initTmap() {
+        map = new Tmapv3.Map("map_div", {
+          center: new Tmapv3.LatLng(37.5665, 126.978), // 초기 위치 설정: 서울
+          width: "80%",
+          height: "400px",
+          zoom: 14, // 초기 줌 레벨
+        });
+      }
+
+      // 실시간으로 RabbitMQ로부터 좌표를 받아 지도에 표시하는 함수
+      function updateMap(latitude, longitude) {
+        var userLocation = new Tmapv3.LatLng(latitude, longitude);
+        // #10 기존의 마커가 존재한다면 지우고 새로운 위치에 마커를 생성
+        if (marker) {
+          marker.setMap(null);
+        }
+        marker = new Tmapv3.Marker({
+          icon: "https://cdn-icons-png.flaticon.com/128/14975/14975104.png",
+          // title: "title",
+          label: "배달 중",
+          position: userLocation,
+          map: map,
+        });
+        map.setCenter(userLocation);
+      }
+
+      // 소켓 연결
+      var socket = io("http://localhost:3000"); // 소켓 연결
+
+      socket.on("connect", function () {
+        console.log("Connected to server via WebSocket");
+      });
+
+      // RabbitMQ로부터 새로운 메시지를 받았을 때 호출되는 콜백 함수
+      socket.on("new_message", function (data) {
+        var message = data.message;
+        var latitude = parseFloat(message.match(/Latitude: ([^,]*)/)[1]);
+        var longitude = parseFloat(message.match(/Longitude: ([^,]*)/)[1]);
+        updateMap(latitude, longitude); // 받은 좌표로 지도 업데이트
+      });
+
+      window.onload = initTmap; // 페이지 로드 시 TMAP 지도 초기화
+    </script>
+  </body>
+</html>
