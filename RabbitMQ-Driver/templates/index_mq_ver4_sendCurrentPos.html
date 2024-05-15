@@ -1,0 +1,55 @@
+<!-- T-Map appkey = 5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu -->
+<!--  -->
+<!--  -->
+<!--  -->
+<!-- 위치 송신 -->
+<!-- //#12 (Driver 입장) 사용자의 실시간 위치를 html에서 얻어 Flask로 보내고, Flask에서는 실시간 위치 데이터를 RabbitMQ로 송신 -->
+<!-- //#15 (Driver 입장) STOMP 프로토콜을 이용해 Web에서 직접 RabbitMQ와 통신 (Flask를 거치지 않고) -->
+<!-- //#15 구글링 후 그냥 복붙한 코드 - 필요 없는 코드여서 주석 처리 -->
+<!--
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>RabbitMQ Web STOMP Example</title>
+    <script src="stomp.js"></script>
+    <script type="text/javascript">
+      document.addEventListener("DOMContentLoaded", function () {
+        // Set up the WebSocket connection to RabbitMQ
+        var ws = new WebSocket("ws://127.0.0.1:15674/ws"); // Use your server address here
+        var client = Stomp.over(ws);
+
+        // Function to be called when connection is established
+        var on_connect = function () {
+          console.log("Connected to RabbitMQ STOMP");
+
+          // Subscribe to a queue ("직접 입력")
+          var queueName = "/queue/test"; // Change to your queue name
+          client.subscribe(queueName, function (message) {
+            // Handle incoming messages
+            console.log("Received message: " + message.body);
+          });
+
+          // Send a message to the queue ("직접 입력")
+          var destination = "/queue/test"; // Change to your destination
+          var message = "Hello, RabbitMQ!"; // Your message
+          client.send(destination, {}, message);
+        };
+
+        // Function to be called in case of an error
+        var on_error = function () {
+          console.log("Error connecting to RabbitMQ STOMP");
+        };
+
+        // Connect to RabbitMQ STOMP using default guest credentials
+        client.connect("guest", "guest", on_connect, on_error, "/");
+      });
+    </script>
+  </head>
+  <body>
+    <h1>RabbitMQ Web STOMP Client Example</h1>
+    <p>Open your browser console to see the output.</p>
+  </body>
+</html>
+
+-->

@@ -15,7 +15,7 @@
     <script src="https://apis.openapi.sk.com/tmap/vectorjs?version=1&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu"></script>
     <!-- //#15 Include the STOMP JavaScript client -->
     <!-- 버전이나 올바른 파일이 확실하지 않은 경우 stomp.jsCDN에서 로드하여 문제 해결 -->
-    <!-- HTML에서 의 스크립트 태그를 stomp.js위 줄로 바꾸고 를 사용하는 스크립트 앞에 위치하도록  -->
+    <!-- HTML에서의 스크립트 태그를 stomp.js 위 줄로 배치시키고, 이 태그를 'Stomp'를 사용하는 스크립트보다 앞에 위치시키기  -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <style>
       #map_div {
@@ -33,11 +33,13 @@
       var stompClient; // #15
 
       // #15 connectToRabbitMQ 함수
+      // STOMP 프로토콜을 사용하여 RabbitMQ에 대한 연결을 설정하는 역할
       function connectToRabbitMQ() {
-        var ws = new WebSocket("ws://127.0.0.1:15674/ws");
-        // (변경 필요) Change this URL to your RabbitMQ WebSocket endpoint
-        stompClient = Stomp.over(ws);
+        var ws = new WebSocket("ws://127.0.0.1:15674/ws"); // (변경 필요) Change this URL to your RabbitMQ WebSocket endpoint
+        stompClient = Stomp.over(ws); // 클라이어트 초기화: STOMP 클라이언트를 초기화하면서 시작.
+        // 이 클라이언트는 WebSockets 프로토콜을 사용하여 RabbitMQ와 상호작용하도록 설계됨.
 
+        //아래 함수는 RabbitMQ서버에 연결을 시도하는 내용.
         stompClient.connect(
           "guest",
           "guest",
@@ -51,7 +53,11 @@
       }
       // #15 STOMP 프로토콜을 이용해 RabbitMQ로 위치 데이터 송신
       function sendDataToRabbitMQ(lat, lng) {
+        // 메시지 준비: 제공된 위도 및 경도 데이터를 인수로 사용하여 메시지 구성 - JSON 형식으로 준비
         var locationData = JSON.stringify({ latitude: lat, longitude: lng });
+
+        // 함수에 구축된 STOMP 클라이언트를 이용, connectToRabbitMQ() 에 준비된 메시지를 RabbitMQ 서버의 특정 목적지로 보내는 기능.
+        // 설정에 따라 대상은 queue 또는 exchange가 될 수 있음.
         stompClient.send("/topic/locationUpdate", {}, locationData);
         console.log("Sent location data to RabbitMQ:", locationData);
       }
