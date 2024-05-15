@@ -1,0 +1,87 @@
+<!-- //#15 (Client 입장) STOMP 프로토콜을 이용해 Web에서 직접 RabbitMQ와 통신 (Flask를 거치지 않고) -->
+<!-- 수신받은 위도, 경도 데이터를 바탕으로 지도에 표시 -->
+<!-- T-Map 지도 App_Key: 5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Subscriber - 고객 화면</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+    <!-- TMAP API 스크립트 추가 -->
+    <script src="https://apis.openapi.sk.com/tmap/vectorjs?version=1&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu"></script>
+    <style>
+      #map_div {
+        width: 100%;
+        height: 500px; /* 지도 높이 설정 */
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Subscriber - 고객 화면(위치를 RabbitMQ로부터 수신)</h1>
+    <!-- 지도를 표시할 div -->
+    <div id="map_div"></div>
+
+    <script>
+      var map;
+      var marker;
+      var stompClient;
+
+      // TMAP 초기화 함수
+      function initTmap() {
+        map = new Tmapv3.Map("map_div", {
+          center: new Tmapv3.LatLng(37.5665, 126.978), // 초기 위치 설정: 서울
+          width: "100%",
+          height: "500px",
+          zoom: 15, // 초기 줌 레벨
+        });
+      }
+
+      //#15 WebSocket을 통해 RabbitMQ 서버에 연결
+      // STOMP 클라이언트를 사용하여 이 연결을 관리
+      function connectAndSubscribe() {
+        var ws = new WebSocket("ws://127.0.0.1:15674/ws"); // WebSocket 연결 주소
+        stompClient = Stomp.over(ws);
+        stompClient.connect(
+          "guest",
+          "guest",
+          function (frame) {
+            console.log("Connected: " + frame);
+
+            // (RabbitMQ로 메시지를 송신하는 Driver 코드에서 주소 확인) 연결이 성공하면 /topic/locationUpdate에 구독을 설정
+            stompClient.subscribe("/topic/locationUpdate", function (message) {
+              // 이 코드로부터 메시지가 도착할 때마다, 콜백 함수에서 수신된 메시지를 처리하여 웹 페이지에 표시
+              var locationData = JSON.parse(message.body);
+              updateMap(locationData.latitude, locationData.longitude); // 지도 업데이트 함수 호출
+            });
+          },
+          function (error) {
+            console.log("Error connecting to WebSocket: " + error);
+          }
+        );
+      }
+
+      // 실시간으로 좌표를 받아 지도에 표시하는 함수
+      function updateMap(latitude, longitude) {
+        var userLocation = new Tmapv3.LatLng(latitude, longitude);
+        // 기존의 마커가 존재한다면 지우고 새로운 위치에 마커를 생성
+        if (marker) {
+          marker.setMap(null);
+        }
+        marker = new Tmapv3.Marker({
+          icon: "https://cdn-icons-png.flaticon.com/128/14975/14975104.png",
+          // title: "title",
+          label: "배달 중",
+          position: userLocation,
+          map: map,
+        });
+        map.setCenter(userLocation); // 지도의 중심을 새 위치로 이동
+      }
+
+      window.onload = function () {
+        initTmap(); // 페이지 로드 시 지도 초기화
+        connectAndSubscribe(); // STOMP 연결 및 구독
+      };
+    </script>
+  </body>
+</html>

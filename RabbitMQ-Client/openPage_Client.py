@@ -8,7 +8,7 @@ app = Flask(__name__)   # Flask 애플리케이션 생성
 
 @app.route('/')
 def index():
-    return render_template('index_mq_ver3_receiveCurrentPosMap.html')  
+    return render_template('index_mq_ver5_receiveCurrentPosMap.html')  
 # 'index.html'은 templates 폴더 내부에 위치해야 함.
 
 if __name__ == '__main__':
