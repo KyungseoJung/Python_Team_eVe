@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>0513_웹화면 구상</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+      }
+      .container {
+        display: flex;
+        height: 100vh;
+      }
+      .sidebar {
+        width: 300px;
+        background-color: #f0f0f0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 20px;
+      }
+      .map {
+        flex: 1;
+        background-color: #1e88e5;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        font-size: 36px;
+      }
+      .header {
+        font-size: 24px;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .delivery-info {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        background-color: white;
+        padding: 20px;
+        /* margin-bottom: 20px;
+        text-align: center; */
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+      .delivery-info div {
+        margin-bottom: 10px;
+      }
+      .item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 30px;
+        border: 3px solid #ff4848;
+        font-size: 1.2em;
+      }
+      .fixed-text {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px;
+        /* height: 100%; */
+      }
+      .buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .button {
+        padding: 10px;
+        text-align: center;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .button:active {
+        background-color: #0056b3;
+      }
+      .button:last-child {
+        margin-bottom: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="sidebar">
+        <div>
+          <div class="header">경로 표시</div>
+          <div class="delivery-info">
+            <div class="item"><strong>배달</strong></div>
+            <div class="fixed-text">경기도 안양시 만안구 회창로</div>
+          </div>
+          <div class="delivery-info">
+            <div class="item"><strong>"시간"</strong></div>
+            <div class="fixed-text">까지 도착</div>
+          </div>
+        </div>
+        <div class="buttons">
+          <div class="button">배달 완료<br />(서비스 시작)</div>
+          <div class="button">수거 완료<br />(서비스 완료)</div>
+        </div>
+      </div>
+      <div class="map">지도</div>
+    </div>
+  </body>
+</html>
