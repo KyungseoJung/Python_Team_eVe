@@ -1,3 +1,5 @@
+<!-- //#16 웹화면 디자인 구성 -->
+<!-- //#17 웹화면 기능 구현 -->
 <!DOCTYPE html>
 <html lang="ko">
   <head>
@@ -42,8 +44,6 @@
         gap: 10px;
         background-color: white;
         padding: 20px;
-        /* margin-bottom: 20px;
-        text-align: center; */
         border: 1px solid #ccc;
         border-radius: 5px;
         margin-bottom: 20px;
@@ -64,7 +64,6 @@
         align-items: center;
         justify-content: center;
         padding: 10px;
-        /* height: 100%; */
       }
       .buttons {
         display: flex;
@@ -86,6 +85,10 @@
       .button:last-child {
         margin-bottom: 0;
       }
+      .button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
     </style>
   </head>
   <body>
@@ -94,7 +97,7 @@
         <div>
           <div class="header">경로 표시</div>
           <div class="delivery-info">
-            <div class="item"><strong>배달</strong></div>
+            <div class="item" id="delivery-type"><strong>배달</strong></div>
             <div class="fixed-text">경기도 안양시 만안구 회창로</div>
           </div>
           <div class="delivery-info">
@@ -103,11 +106,34 @@
           </div>
         </div>
         <div class="buttons">
-          <div class="button">배달 완료<br />(서비스 시작)</div>
-          <div class="button">수거 완료<br />(서비스 완료)</div>
+          <button class="button" id="delivery-complete">
+            배달 완료<br />(서비스 시작)
+          </button>
+          <button class="button" id="pickup-complete">
+            수거 완료<br />(서비스 완료)
+          </button>
         </div>
       </div>
       <div class="map">지도</div>
     </div>
+    <script>
+      // #17 delivery-type에 따라 버튼 활성화 or 비활성화
+      document.addEventListener("DOMContentLoaded", function () {
+        var deliveryType = document
+          .getElementById("delivery-type")
+          .innerText.trim();
+        var deliveryCompleteButton =
+          document.getElementById("delivery-complete");
+        var pickupCompleteButton = document.getElementById("pickup-complete");
+
+        if (deliveryType === "배달") {
+          deliveryCompleteButton.disabled = false;
+          pickupCompleteButton.disabled = true;
+        } else if (deliveryType === "수거") {
+          deliveryCompleteButton.disabled = true;
+          pickupCompleteButton.disabled = false;
+        }
+      });
+    </script>
   </body>
 </html>
