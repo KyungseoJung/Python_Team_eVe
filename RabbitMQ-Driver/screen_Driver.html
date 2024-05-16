@@ -116,14 +116,18 @@
             <div class="fixed-text">경기도 안양시 만안구 화창로</div>
           </div> -->
           <div class="delivery-info">
-            <div class="fixed-text">Latitude: <span id="latitude"></span></div>
             <div class="fixed-text">
-              Longitude: <span id="longitude"></span>
+              <!--Latitude:-->
+              <span id="latitude"></span>
+            </div>
+            <div class="fixed-text">
+              <!--Longitude: -->
+              <span id="longitude"></span>
             </div>
           </div>
 
           <div class="time-info">
-            <div class="item"><strong>"시간"</strong></div>
+            <div class="item" id="arrivalTime"><strong>"시간"</strong></div>
             <div class="fixed-text">까지 도착</div>
           </div>
         </div>
@@ -138,25 +142,7 @@
       </div>
       <div class="map">지도</div>
     </div>
-    <!-- <script>
-      // #17 delivery-type에 따라 버튼 활성화 or 비활성화
-      document.addEventListener("DOMContentLoaded", function () {
-        var deliveryType = document
-          .getElementById("delivery-type")
-          .innerText.trim();
-        var deliveryCompleteButton =
-          document.getElementById("delivery-complete");
-        var pickupCompleteButton = document.getElementById("pickup-complete");
 
-        if (deliveryType === "배달") {
-          deliveryCompleteButton.disabled = false;
-          pickupCompleteButton.disabled = true;
-        } else if (deliveryType === "수거") {
-          deliveryCompleteButton.disabled = true;
-          pickupCompleteButton.disabled = false;
-        }
-      });
-    </script> -->
     <script>
       document.addEventListener("DOMContentLoaded", function () {
         // Sample JSON data - 추후 수리모형 팀에서 받아야 하는 데이터
@@ -171,13 +157,16 @@
         ];
 
         var currentIndex = 0; // 현재 데이터 순서를 확인하기 위한 변수
+        // 배달 유형 표시 문구
         var deliveryType = document.getElementById("delivery-type");
+        // 위치 데이터 표시 문구
         var latitudeDisplay = document.getElementById("latitude");
         var longitudeDisplay = document.getElementById("longitude");
+        // 도착 시간 표시 문구
+        var arrivalTimeDisplay = document.getElementById("arrivalTime");
 
-        var deliveryCompleteButton =
-          document.getElementById("delivery-complete");
-        var pickupCompleteButton = document.getElementById("pickup-complete");
+        var deliveryCompleteBtn = document.getElementById("delivery-complete");
+        var pickupCompleteBtn = document.getElementById("pickup-complete");
 
         // 배달 유형(delivery_type), 위치 데이터(위도, 경도) 데이터를 업데이트 & 버튼 상태 업데이트 함수
         function updateDeliveryInfo() {
@@ -185,12 +174,25 @@
           latitudeDisplay.innerText = deliveries[currentIndex]["location"][0];
           longitudeDisplay.innerText = deliveries[currentIndex]["location"][1];
 
-          if (deliveryType.innerText.trim() === "배달") {
-            deliveryCompleteButton.disabled = false;
-            pickupCompleteButton.disabled = true;
+          //========== #17-3 모든 배달 정보를 마치면, 팝업창과 함께 두 버튼 모두 비활성화
+          if (currentIndex >= deliveries.length - 1) {
+            // 두 버튼 모두 비활성화
+            deliveryCompleteBtn.disabled = true;
+            pickupCompleteBtn.disabled = true;
+            alert("오늘 작업을 완료했습니다!!"); // 작업 완료 팝업
+            // (delivery_type & 위치 데이터) 표시 부분 업데이트
+            deliveryType.innerText = "작업 완료";
+            latitudeDisplay.innerText = "";
+            longitudeDisplay.innerText = "";
+            arrivalTimeDisplay.innerText = "";
           } else {
-            deliveryCompleteButton.disabled = true;
-            pickupCompleteButton.disabled = false;
+            if (deliveryType.innerText.trim() === "배달") {
+              deliveryCompleteBtn.disabled = false;
+              pickupCompleteBtn.disabled = true;
+            } else {
+              deliveryCompleteBtn.disabled = true;
+              pickupCompleteBtn.disabled = false;
+            }
           }
         }
 
@@ -198,14 +200,14 @@
         updateDeliveryInfo();
 
         // [배달 완료] 및 [수거 완료] 버튼에 이벤트 리스너 추가
-        deliveryCompleteButton.addEventListener("click", function () {
+        deliveryCompleteBtn.addEventListener("click", function () {
           if (currentIndex < deliveries.length - 1) {
             currentIndex++; // 다음 데이터 (delivery_type, 위치 데이터) 표시
             updateDeliveryInfo();
           }
         });
 
-        pickupCompleteButton.addEventListener("click", function () {
+        pickupCompleteBtn.addEventListener("click", function () {
           if (currentIndex < deliveries.length - 1) {
             currentIndex++; // 다음 데이터 (delivery_type, 위치 데이터) 표시
             updateDeliveryInfo();
