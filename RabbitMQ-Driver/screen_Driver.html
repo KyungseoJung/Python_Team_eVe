@@ -1,5 +1,8 @@
 <!-- //#16 웹화면 디자인 구성 -->
-<!-- //#17 웹화면 기능 구현 -->
+<!-- //#17 웹화면 기능 구현 
+#17-1 [배달 완료] 또는 [수거 완료] 버튼 둘 중 하나만 활성화
+#17-2 배달 정보에 위도, 경도 데이터도 추가해서 순서대로 표시하는 기능
+-->
 <!DOCTYPE html>
 <html lang="ko">
   <head>
@@ -40,6 +43,16 @@
       }
       .delivery-info {
         display: grid;
+        /* grid-template-columns: 1fr 1fr; */
+        gap: 10px;
+        background-color: white;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+      .time-info {
+        display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 10px;
         background-color: white;
@@ -48,7 +61,7 @@
         border-radius: 5px;
         margin-bottom: 20px;
       }
-      .delivery-info div {
+      .time-info div {
         margin-bottom: 10px;
       }
       .item {
@@ -98,9 +111,18 @@
           <div class="header">경로 표시</div>
           <div class="delivery-info">
             <div class="item" id="delivery-type"><strong>배달</strong></div>
-            <div class="fixed-text">경기도 안양시 만안구 회창로</div>
           </div>
+          <!-- <div class="delivery-info">
+            <div class="fixed-text">경기도 안양시 만안구 화창로</div>
+          </div> -->
           <div class="delivery-info">
+            <div class="fixed-text">Latitude: <span id="latitude"></span></div>
+            <div class="fixed-text">
+              Longitude: <span id="longitude"></span>
+            </div>
+          </div>
+
+          <div class="time-info">
             <div class="item"><strong>"시간"</strong></div>
             <div class="fixed-text">까지 도착</div>
           </div>
@@ -116,7 +138,7 @@
       </div>
       <div class="map">지도</div>
     </div>
-    <script>
+    <!-- <script>
       // #17 delivery-type에 따라 버튼 활성화 or 비활성화
       document.addEventListener("DOMContentLoaded", function () {
         var deliveryType = document
@@ -133,6 +155,62 @@
           deliveryCompleteButton.disabled = true;
           pickupCompleteButton.disabled = false;
         }
+      });
+    </script> -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Sample JSON data - 추후 수리모형 팀에서 받아야 하는 데이터
+        var deliveries = [
+          { delivery_type: "배달", location: [37.337179, 127.245669] },
+          { delivery_type: "수거", location: [37.3372644, 127.246081] },
+          { delivery_type: "배달", location: [37.337349800000005, 127.246493] },
+          { delivery_type: "수거", location: [37.33743520000001, 127.246905] },
+          { delivery_type: "배달", location: [37.33752060000001, 127.247317] },
+
+          // 나머지 데이터 추가 필요
+        ];
+
+        var currentIndex = 0; // 현재 데이터 순서를 확인하기 위한 변수
+        var deliveryType = document.getElementById("delivery-type");
+        var latitudeDisplay = document.getElementById("latitude");
+        var longitudeDisplay = document.getElementById("longitude");
+
+        var deliveryCompleteButton =
+          document.getElementById("delivery-complete");
+        var pickupCompleteButton = document.getElementById("pickup-complete");
+
+        // 배달 유형(delivery_type), 위치 데이터(위도, 경도) 데이터를 업데이트 & 버튼 상태 업데이트 함수
+        function updateDeliveryInfo() {
+          deliveryType.innerText = deliveries[currentIndex]["delivery_type"];
+          latitudeDisplay.innerText = deliveries[currentIndex]["location"][0];
+          longitudeDisplay.innerText = deliveries[currentIndex]["location"][1];
+
+          if (deliveryType.innerText.trim() === "배달") {
+            deliveryCompleteButton.disabled = false;
+            pickupCompleteButton.disabled = true;
+          } else {
+            deliveryCompleteButton.disabled = true;
+            pickupCompleteButton.disabled = false;
+          }
+        }
+
+        // 초기 정보 표시 및 업데이트
+        updateDeliveryInfo();
+
+        // [배달 완료] 및 [수거 완료] 버튼에 이벤트 리스너 추가
+        deliveryCompleteButton.addEventListener("click", function () {
+          if (currentIndex < deliveries.length - 1) {
+            currentIndex++; // 다음 데이터 (delivery_type, 위치 데이터) 표시
+            updateDeliveryInfo();
+          }
+        });
+
+        pickupCompleteButton.addEventListener("click", function () {
+          if (currentIndex < deliveries.length - 1) {
+            currentIndex++; // 다음 데이터 (delivery_type, 위치 데이터) 표시
+            updateDeliveryInfo();
+          }
+        });
       });
     </script>
   </body>
