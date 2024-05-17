@@ -3,14 +3,14 @@
 #17-1 [배달 완료] 또는 [수거 완료] 버튼 둘 중 하나만 활성화
 #17-2 배달 정보에 위도, 경도 데이터도 추가해서 순서대로 표시하는 기능
 #17-3 모든 작업을 완료했을 시, 팝업창을 띄우고 기존 표시 문구를 수정
-
+#17-4 기존 위도, 경도를 도로명 주소로 변환하여 표시
 -->
 <!DOCTYPE html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>0513_웹화면 구상</title>
+    <title>0516_웹화면 구상</title>
     <style>
       body {
         margin: 0;
@@ -114,20 +114,15 @@
           <div class="delivery-info">
             <div class="item" id="delivery-type"><strong>배달</strong></div>
           </div>
-          <!-- <div class="delivery-info">
-            <div class="fixed-text">경기도 안양시 만안구 화창로</div>
-          </div> -->
-          <div class="delivery-info">
-            <div class="fixed-text">
-              <!--Latitude:-->
-              <span id="latitude"></span>
-            </div>
-            <div class="fixed-text">
-              <!--Longitude: -->
-              <span id="longitude"></span>
-            </div>
-          </div>
+          <!-- 도착지 표시 -->
 
+          <!-- <div class="fixed-text"><span id="latitude"></span></div> -->
+          <!-- <div class="fixed-text"><span id="longitude"></span></div> -->
+
+          <div class="delivery-info">
+            <div class="fixed-text" id="arrivalAddress">Address:</div>
+          </div>
+          <!-- 도착 시간 표시 -->
           <div class="time-info">
             <div class="item" id="arrivalTime"><strong>"시간"</strong></div>
             <div class="fixed-text">까지 도착</div>
@@ -145,15 +140,16 @@
       <div class="map">지도</div>
     </div>
 
+    <!-- ========= 기능 구현 코드 ========= -->
     <script>
       document.addEventListener("DOMContentLoaded", function () {
         // Sample JSON data - 추후 수리모형 팀에서 받아야 하는 데이터
         var deliveries = [
           { delivery_type: "배달", location: [37.337179, 127.245669] },
           { delivery_type: "수거", location: [37.3372644, 127.246081] },
-          { delivery_type: "배달", location: [37.337349800000005, 127.246493] },
-          { delivery_type: "수거", location: [37.33743520000001, 127.246905] },
-          { delivery_type: "배달", location: [37.33752060000001, 127.247317] },
+          { delivery_type: "배달", location: [37.337606, 127.247729] },
+          { delivery_type: "수거", location: [37.337486, 127.24966] },
+          { delivery_type: "배달", location: [37.335611, 127.255401] },
 
           // 나머지 데이터 추가 필요
         ];
@@ -161,33 +157,70 @@
         var currentIndex = 0; // 현재 데이터 순서를 확인하기 위한 변수
         // 배달 유형 표시 문구
         var deliveryType = document.getElementById("delivery-type");
-        // 위치 데이터 표시 문구
-        var latitudeDisplay = document.getElementById("latitude");
-        var longitudeDisplay = document.getElementById("longitude");
+        // 위치 데이터 표시 문구    // #17-4 주석처리
+        // var latitudeDisplay = document.getElementById("latitude");
+        // var longitudeDisplay = document.getElementById("longitude");
         // 도착 시간 표시 문구
         var arrivalTimeDisplay = document.getElementById("arrivalTime");
+        // 도착지 표시 문구 (위도, 경도 -> 도로명주소)
+        var arrivalAddressDisplay = document.getElementById("arrivalAddress");
 
         var deliveryCompleteBtn = document.getElementById("delivery-complete");
         var pickupCompleteBtn = document.getElementById("pickup-complete");
 
-        // 배달 유형(delivery_type), 위치 데이터(위도, 경도) 데이터를 업데이트 & 버튼 상태 업데이트 함수
+        //#17-4 (TMAP API 이용) 기존 위도, 경도를 "도로명 주소"로 변환하고, 표시
+        function updateAddress(latitude, longitude) {
+          var xhr = new XMLHttpRequest();
+          //#17-4 개인의 TMap API KEY 입력
+          xhr.open(
+            "GET",
+            `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${latitude}&lon=${longitude}&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu`
+          );
+          xhr.onload = function () {
+            if (xhr.status === 200) {
+              var response = JSON.parse(xhr.responseText);
+              var address = response.addressInfo.fullAddress;
+              arrivalAddressDisplay.innerText = address;
+              //   console.log("//#17-4 도로명 주소로 변환 및 표시");
+            } else {
+              console.error("Failed to fetch address");
+            }
+          };
+          xhr.onerror = function () {
+            console.error("Error during the network request.");
+          };
+          xhr.send();
+        }
+
+        // 배달 유형(delivery_type), 위치 데이터(위도, 경도) 표시 문구 업데이트 & 버튼 상태 업데이트 함수
         function updateDeliveryInfo() {
           deliveryType.innerText = deliveries[currentIndex]["delivery_type"];
-          latitudeDisplay.innerText = deliveries[currentIndex]["location"][0];
-          longitudeDisplay.innerText = deliveries[currentIndex]["location"][1];
+          // #17-4 주석처리
+          //   latitudeDisplay.innerText = deliveries[currentIndex]["location"][0];
+          //   longitudeDisplay.innerText = deliveries[currentIndex]["location"][1];
 
           //========== #17-3 모든 배달 정보를 마치면, 팝업창과 함께 두 버튼 모두 비활성화
           if (currentIndex >= deliveries.length - 1) {
             // 두 버튼 모두 비활성화
             deliveryCompleteBtn.disabled = true;
             pickupCompleteBtn.disabled = true;
-            alert("오늘 작업을 완료했습니다!!"); // 작업 완료 팝업
+            alert("복귀하세요!!: " + "경기도 용인시 처인구 모현읍 왕산리 131"); // 작업 완료 팝업
             // (delivery_type & 위치 데이터) 표시 부분 업데이트
             deliveryType.innerText = "작업 완료";
-            latitudeDisplay.innerText = "";
-            longitudeDisplay.innerText = "";
+
+            // #17-4 주석처리
+            // latitudeDisplay.innerText = "";
+            // longitudeDisplay.innerText = "";
+            arrivalAddressDisplay.innerText = "";
             arrivalTimeDisplay.innerText = "";
+            // console.log("//#17-4 작업 완료 후 문구 표시");
           } else {
+            //#17-4 (TMAP API 이용) 기존 위도, 경도를 "도로명 주소"로 변환하고, 표시
+            updateAddress(
+              deliveries[currentIndex]["location"][0],
+              deliveries[currentIndex]["location"][1]
+            );
+
             if (deliveryType.innerText.trim() === "배달") {
               deliveryCompleteBtn.disabled = false;
               pickupCompleteBtn.disabled = true;
