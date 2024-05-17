@@ -1,0 +1,265 @@
+<!-- //#16 웹화면 디자인 구성 -->
+<!-- //#17 웹화면 기능 구현 
+#17-1 [배달 완료] 또는 [수거 완료] 버튼 둘 중 하나만 활성화
+#17-2 배달 정보에 위도, 경도 데이터도 추가해서 순서대로 표시하는 기능
+#17-3 모든 작업을 완료했을 시, 팝업창을 띄우고 기존 표시 문구를 수정
+#17-4 기존 위도, 경도를 도로명 주소로 변환하여 표시
+#17-5 CSV파일로 저장되어 있는 배달 정보(deliveries.csv) 불러오기
+-->
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>0516_웹화면 구상</title>
+    <!-- //#17-5 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+      }
+      .container {
+        display: flex;
+        height: 100vh;
+      }
+      .sidebar {
+        width: 300px;
+        background-color: #f0f0f0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 20px;
+      }
+      .map {
+        flex: 1;
+        background-color: #1e88e5;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        font-size: 36px;
+      }
+      .header {
+        font-size: 24px;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .delivery-info {
+        display: grid;
+        /* grid-template-columns: 1fr 1fr; */
+        gap: 10px;
+        background-color: white;
+        padding: 20px;
+        border: 1px solid #ff4848;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+      .time-info {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        background-color: white;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+      .time-info div {
+        margin-bottom: 10px;
+      }
+      .item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 30px;
+        /* border: 3px solid #ff4848; */
+        font-size: 1.2em;
+      }
+      .fixed-text {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px;
+      }
+      .buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .button {
+        padding: 10px;
+        text-align: center;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .button:active {
+        background-color: #0056b3;
+      }
+      .button:last-child {
+        margin-bottom: 0;
+      }
+      .button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="sidebar">
+        <div>
+          <div class="header">경로 표시</div>
+          <div class="delivery-info">
+            <div class="item" id="delivery-type"><strong>배달</strong></div>
+          </div>
+          <!-- 도착지 표시 -->
+
+          <!-- <div class="fixed-text"><span id="latitude"></span></div> -->
+          <!-- <div class="fixed-text"><span id="longitude"></span></div> -->
+
+          <div class="delivery-info">
+            <div class="fixed-text" id="arrivalAddress">Address:</div>
+          </div>
+          <!-- 도착 시간 표시 -->
+          <div class="time-info">
+            <div class="item" id="arrivalTime"><strong>"시간"</strong></div>
+            <div class="fixed-text">까지 도착</div>
+          </div>
+        </div>
+        <div class="buttons">
+          <button class="button" id="delivery-complete">
+            배달 완료<br />(서비스 시작)
+          </button>
+          <button class="button" id="pickup-complete">
+            수거 완료<br />(서비스 완료)
+          </button>
+        </div>
+      </div>
+      <div class="map">지도</div>
+    </div>
+
+    <!-- ========= 기능 구현 코드 ========= -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Sample JSON data - 추후 수리모형 팀에서 받아야 하는 데이터
+
+        //#17-5 CSV 파일 불러와서 데이터로 이용
+        var deliveries = [];
+        Papa.parse("/static/deliveries.csv", {
+          download: true,
+          header: true,
+          complete: function (results) {
+            console.log("//#17-5 CSV 파일 불러오기");
+            deliveries = results.data;
+
+            updateDeliveryInfo(); // #17-5: 위치 이동 - 데이터 로드 후 처음에 한 번 정보를 업데이트
+          },
+        });
+
+        var currentIndex = 0; // 현재 데이터 순서를 확인하기 위한 변수
+        // 배달 유형 표시 문구
+        var deliveryType = document.getElementById("delivery-type");
+        // 위치 데이터 표시 문구    // #17-4 주석처리
+        // var latitudeDisplay = document.getElementById("latitude");
+        // var longitudeDisplay = document.getElementById("longitude");
+        // 도착지 표시 문구 (위도, 경도 -> 도로명주소)
+        var arrivalAddressDisplay = document.getElementById("arrivalAddress");
+        // 도착 시간 표시 문구
+        var arrivalTimeDisplay = document.getElementById("arrivalTime");
+
+        var deliveryCompleteBtn = document.getElementById("delivery-complete");
+        var pickupCompleteBtn = document.getElementById("pickup-complete");
+
+        //#17-4 (TMAP API 이용) 기존 위도, 경도를 "도로명 주소"로 변환하고, 표시
+        function updateAddress(latitude, longitude) {
+          var xhr = new XMLHttpRequest();
+          //#17-4 개인의 TMap API KEY 입력
+          xhr.open(
+            "GET",
+            `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${latitude}&lon=${longitude}&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu`
+          );
+          xhr.onload = function () {
+            if (xhr.status === 200) {
+              var response = JSON.parse(xhr.responseText);
+              var address = response.addressInfo.fullAddress;
+              arrivalAddressDisplay.innerText = address;
+              //   console.log("//#17-4 도로명 주소로 변환 및 표시");
+            } else {
+              console.error("Failed to fetch address");
+            }
+          };
+          xhr.onerror = function () {
+            console.error("Error during the network request.");
+          };
+          xhr.send();
+        }
+
+        // 배달 유형(delivery_type), 위치 데이터(위도, 경도) 표시 문구 업데이트 & 버튼 상태 업데이트 함수
+        function updateDeliveryInfo() {
+          console.log("//#17-5 updateDeliveryInfo 함수 실행");
+          deliveryType.innerText = deliveries[currentIndex].delivery_type;
+          // #17-4 주석처리
+          //   latitudeDisplay.innerText = deliveries[currentIndex]["location"][0];
+          //   longitudeDisplay.innerText = deliveries[currentIndex]["location"][1];
+
+          //========== #17-3 모든 배달 정보를 마치면, 팝업창과 함께 두 버튼 모두 비활성화
+          if (currentIndex >= deliveries.length - 1) {
+            // 두 버튼 모두 비활성화
+            deliveryCompleteBtn.disabled = true;
+            pickupCompleteBtn.disabled = true;
+            alert("복귀하세요!!: " + "경기도 용인시 처인구 모현읍 왕산리 131"); // 작업 완료 팝업
+            // (delivery_type & 위치 데이터) 표시 부분 업데이트
+            deliveryType.innerText = "작업 완료";
+
+            // #17-4 주석처리
+            // latitudeDisplay.innerText = "";
+            // longitudeDisplay.innerText = "";
+            arrivalAddressDisplay.innerText = "";
+            arrivalTimeDisplay.innerText = "";
+            // console.log("//#17-4 작업 완료 후 문구 표시");
+          } else {
+            //#17-4 위치 표시 - (TMAP API 이용) 기존 위도, 경도를 "도로명 주소"로 변환하고, 표시
+            updateAddress(
+              deliveries[currentIndex].latitude,
+              deliveries[currentIndex].longitude
+            );
+            arrivalTimeDisplay.innerText = deliveries[currentIndex].time;
+
+            if (deliveryType.innerText.trim() === "배달") {
+              deliveryCompleteBtn.disabled = false;
+              pickupCompleteBtn.disabled = true;
+            } else {
+              deliveryCompleteBtn.disabled = true;
+              pickupCompleteBtn.disabled = false;
+            }
+          }
+        }
+
+        // // 초기 정보 표시 및 업데이트  // #17-5 csv 파일 가져온 후 실행되도록 Papa.parse 함수 안에 넣기
+        // updateDeliveryInfo();
+
+        // [배달 완료] 및 [수거 완료] 버튼에 이벤트 리스너 추가
+        deliveryCompleteBtn.addEventListener("click", function () {
+          if (currentIndex < deliveries.length - 1) {
+            currentIndex++; // 다음 데이터 (delivery_type, 위치 데이터) 표시
+            updateDeliveryInfo();
+          }
+        });
+
+        pickupCompleteBtn.addEventListener("click", function () {
+          if (currentIndex < deliveries.length - 1) {
+            currentIndex++; // 다음 데이터 (delivery_type, 위치 데이터) 표시
+            updateDeliveryInfo();
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
