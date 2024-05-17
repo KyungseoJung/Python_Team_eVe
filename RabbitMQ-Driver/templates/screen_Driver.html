@@ -3,8 +3,10 @@
 #17-1 [배달 완료] 또는 [수거 완료] 버튼 둘 중 하나만 활성화
 #17-2 배달 정보에 위도, 경도 데이터도 추가해서 순서대로 표시하는 기능
 #17-3 모든 작업을 완료했을 시, 팝업창을 띄우고 기존 표시 문구를 수정
-#17-4 기존 위도, 경도를 도로명 주소로 변환하여 표시
-#17-5 CSV파일로 저장되어 있는 배달 정보(deliveries.csv) 불러오기
+#17-4 (T-Map API 이용)기존 위도, 경도를 도로명 주소로 변환하여 표시
+#17-5 CSV파일로 저장되어 있는 배달 정보(deliveries.csv)를 JavaScript로 불러와서 데이터 이용
+
+#19 버튼을 누르면, RabbitMQ로 메시지 송신
 -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -12,7 +14,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>0516_웹화면 구상</title>
+    <title>Driver 웹화면 구상</title>
+    <!-- #19 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
     <!-- //#17-5 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 
@@ -148,8 +153,44 @@
     <!-- ========= 기능 구현 코드 ========= -->
     <script>
       document.addEventListener("DOMContentLoaded", function () {
-        // Sample JSON data - 추후 수리모형 팀에서 받아야 하는 데이터
+        // #19 RabbitMQ 서버 연결
+        var stompClient;
 
+        function connectToRabbitMQ() {
+          var ws = new WebSocket("ws://127.0.0.1:15674/ws");
+          stompClient = Stomp.over(ws);
+
+          stompClient.connect(
+            "guest",
+            "guest",
+            function (frame) {
+              console.log("Connected: " + frame);
+            },
+            function (error) {
+              console.log("Error connecting to WebSocket: " + error);
+            }
+          );
+        }
+        // #19 버튼을 누르면, RabbitMQ로 메시지 송신
+        function sendRabbitMQMessage(message) {
+          if (stompClient && stompClient.connected) {
+            stompClient.send("/topic/serviceState", {}, message);
+          } else {
+            console.log(
+              "Not connected to RabbitMQ. Attempting to reconnect..."
+            );
+            connectToRabbitMQ();
+            setTimeout(function () {
+              if (stompClient.connected) {
+                stompClient.send("/topic/serviceState", {}, message);
+              } else {
+                console.log("Failed to reconnect to RabbitMQ.");
+              }
+            }, 5000);
+          }
+        }
+
+        // Sample JSON data - 추후 수리모형 팀에서 받아야 하는 데이터
         //#17-5 CSV 파일 불러와서 데이터로 이용
         var deliveries = [];
         Papa.parse("/static/deliveries.csv", {
@@ -247,6 +288,8 @@
 
         // [배달 완료] 및 [수거 완료] 버튼에 이벤트 리스너 추가
         deliveryCompleteBtn.addEventListener("click", function () {
+          sendRabbitMQMessage("배달완료"); // #19 버튼을 누르면, RabbitMQ로 메시지 송신
+
           if (currentIndex < deliveries.length - 1) {
             currentIndex++; // 다음 데이터 (delivery_type, 위치 데이터) 표시
             updateDeliveryInfo();
@@ -254,11 +297,16 @@
         });
 
         pickupCompleteBtn.addEventListener("click", function () {
+          sendRabbitMQMessage("수거완료"); // #19 버튼을 누르면, RabbitMQ로 메시지 송신
+
           if (currentIndex < deliveries.length - 1) {
             currentIndex++; // 다음 데이터 (delivery_type, 위치 데이터) 표시
             updateDeliveryInfo();
           }
         });
+
+        // 실행 코드들
+        connectToRabbitMQ(); // 웹 페이지가 로드될 때 RabbitMQ에 연결
       });
     </script>
   </body>
