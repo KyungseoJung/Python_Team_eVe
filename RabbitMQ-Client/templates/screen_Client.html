@@ -1,0 +1,184 @@
+<!-- //#18 고객 웹화면 디자인 구성 -->
+<!-- 
+#20 Driver 화면에서 누르는 버튼에 따라 (좌측 하단) 서비스 상태 표시 다르게 업데이트
+
+  
+ -->
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>서비스 상태 확인</title>
+    <!-- #20 STOMP 프로토콜 연결 - Include the STOMP JavaScript client-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background-color: #e9e9e9;
+      }
+      .container {
+        display: flex;
+        height: 100vh;
+      }
+      .sidebar {
+        width: 300px;
+        background-color: #f0f0f0;
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+      }
+      .map {
+        flex: 1;
+        background-color: #1e88e5;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        font-size: 36px;
+      }
+      .header {
+        font-size: 30px;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .service-application {
+        background-color: white;
+        padding: 10px;
+        border: 2px solid #000;
+        border-radius: 5px;
+        margin-bottom: 230px; /* Increased spacing */
+      }
+      .service-detail {
+        margin: 10px;
+        padding: 10px;
+        border: 1px solid #000;
+        border-radius: 5px;
+      }
+      .status-indicators {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+        background-color: white;
+        border: 1px solid #000;
+        border-radius: 5px;
+      }
+      .status-indicator .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: #75b900;
+      }
+      .status-indicator .circle.inactive {
+        background-color: #cccccc;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="sidebar">
+        <div class="header">서비스 상태 확인</div>
+        <!-- 서비스 신청 내역 큰 박스 -->
+        <div class="service-application">
+          <div class="header">서비스 신청 내역</div>
+          <div class="service-detail">
+            <strong>차량 정보:</strong> 12루 1234
+          </div>
+          <div class="service-detail"><strong>선택 상품:</strong> 40% 충전</div>
+          <div class="service-detail"><strong>예약 시간:</strong> 18:00</div>
+        </div>
+
+        <!-- =============서비스 상태 표시 (가고 있어요)(충전을 시작했어요)(충전을 완료했어요)============= -->
+        <!-- #20 id 추가 -->
+        <div class="status-indicators" id="going">
+          <div class="status-indicator">
+            <div class="circle"></div>
+            <div>가고 있어요</div>
+          </div>
+
+          <!-- #20 id 추가 -->
+          <div class="status-indicator" id="chargingStart">
+            <div class="circle inactive"></div>
+            <div>충전을 시작했어요</div>
+          </div>
+
+          <div class="status-indicator" id="chargingComplete">
+            <div class="circle inactive"></div>
+            <div>충전을 완료했어요</div>
+          </div>
+        </div>
+        <!-- 여기까지 서비스 상태 표시 (status-indicators)-->
+      </div>
+      <div class="map">지도</div>
+    </div>
+
+    <!-- ========= 기능 구현 코드 ========= -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // #20 RabbitMQ 서버 연결 - STOMP 프로토콜 연결
+        var stompClient;
+        // Publisher - Subscriber 중 Subscriber 입장
+        function connectAndSubscribe() {
+          var ws = new WebSocket("ws://127.0.0.1:15674/ws"); // 이 주소는 RabbitMQ 서버의 웹소켓 주소임.
+          stompClient = Stomp.over(ws);
+          stompClient.connect(
+            "guest",
+            "guest",
+            function (frame) {
+              console.log("Connected: " + frame);
+              stompClient.subscribe("/topic/serviceState", function (message) {
+                // handleServiceStateMessage(JSON.parse(message.body).text);
+                // #20 메시지 본문이 JSON 형식이 아님. JSON.parse를 사용하여 문자열을 파싱하려 했으나, RabbitMQ에서 전송된 메시지는 일반 텍스트 문자열임.
+                // 따라서, JSON으로 파싱하는 대신, 직접 문자열을 사용하여 조건 확인
+                handleServiceStateMessage(message.body);
+              });
+            },
+            function (error) {
+              console.log("STOMP error: " + error);
+            }
+          );
+        }
+        // #20 RabbitMQ로부터 수신받은 메시지("배달완료" or "수거완료")를 기반으로 화면 표시
+        function handleServiceStateMessage(message) {
+          console.log("Received message: ", message);
+          // 이 코드에서는 querySelector를 사용하여 해당 ID를 가진 요소에 접근하고, 메시지에 따라 적절한 클래스를 추가하거나 제거하여 상태 표시기의 색을 변경
+          var goingCircle = document.querySelector("#going .circle");
+          var chargingStartCircle = document.querySelector(
+            "#chargingStart .circle"
+          );
+          var chargingCompleteCircle = document.querySelector(
+            "#chargingComplete .circle"
+          );
+
+          if (message === "배달완료") {
+            // Set "가고 있어요" and "충전을 완료했어요" to inactive (grey)
+            goingCircle.classList.add("inactive");
+            chargingCompleteCircle.classList.add("inactive");
+
+            // Set "충전을 시작했어요" to active (green)
+            chargingStartCircle.classList.remove("inactive");
+          } else if (message === "수거완료") {
+            // Set "가고 있어요" and "충전을 시작했어요" to inactive (grey)
+            goingCircle.classList.add("inactive");
+            chargingStartCircle.classList.add("inactive");
+
+            // Set "충전을 완료했어요" to active (green)
+
+            chargingCompleteCircle.classList.remove("inactive");
+          }
+        }
+
+        connectAndSubscribe();
+      });
+    </script>
+  </body>
+</html>
