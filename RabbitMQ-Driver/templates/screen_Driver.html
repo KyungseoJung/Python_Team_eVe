@@ -198,7 +198,7 @@
         // Sample JSON data - 추후 수리모형 팀에서 받아야 하는 데이터
         //#17-5 CSV 파일 불러와서 데이터로 이용
         var deliveries = [];
-        Papa.parse("/static/deliveries2.csv", {
+        Papa.parse("/static/deliveries.csv", {
           download: true,
           header: true,
           complete: function (results) {

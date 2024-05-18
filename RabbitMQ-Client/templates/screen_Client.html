@@ -1,9 +1,10 @@
-<!-- //#18 고객 웹화면 디자인 구성 -->
 <!-- 
-#20 Driver 화면에서 누르는 버튼에 따라 (좌측 하단) 서비스 상태 표시 다르게 업데이트
+//#18 고객 웹화면 디자인 구성 
 
-  
- -->
+#20 고객 웹화면 - Driver 화면에서 누르는 버튼에 따라 RabbitMQ 메시지를 수신함으로써 (좌측 하단) 서비스 상태 표시 다르게 업데이트
+#22 고객의 수만큼 다른 웹페이지 실행되도록 & client_id에 따라 다른 RabbitMQ 주소를 부여받고, 그에 대한 데이터를 수신받도록
+
+-->
 <!DOCTYPE html>
 <html lang="ko">
   <head>
@@ -126,6 +127,18 @@
       document.addEventListener("DOMContentLoaded", function () {
         // #20 RabbitMQ 서버 연결 - STOMP 프로토콜 연결
         var stompClient;
+
+        var clientId = "{{ clientId }}"; //#21 Jinja2 템플릿 구문을 사용하여 변수 값을 직접 받아옵니다.
+        console.log("//#22 Flask로부터 전달받은 clientId 값: " + clientId);
+        // #21 (취소된 방법) URL에서 clientId 값을 가져온다.
+        // 예를 들면, http://example.com/screen2?client_id=1234 형식으로 되어 있을 때 1234 값을 가져오는 것
+        // *주의: http://127.0.0.1:5002/client=1 로 되어 있는데, 이 URL 형식은 표준적인 쿼리 스트링 형식이 아니어서 JavaScript가 client_id를 제대로 추출하지 못하는 것
+        // URL에서 쿼리 스트링을 사용하여 파라미터를 전달하려면 ?를 사용해야 하며, 파라미터 이름과 값을 =로 연결해야 함.
+        // var clientId = new URLSearchParams(window.location.search).get(
+        //   "client_id"
+        // );
+        // console.log("//#22 url로부터 얻은 clientId = " + clientId);
+
         // Publisher - Subscriber 중 Subscriber 입장
         function connectAndSubscribe() {
           var ws = new WebSocket("ws://127.0.0.1:15674/ws"); // 이 주소는 RabbitMQ 서버의 웹소켓 주소임.
@@ -135,7 +148,9 @@
             "guest",
             function (frame) {
               console.log("Connected: " + frame);
-              stompClient.subscribe("/topic/serviceState", function (message) {
+              // #21 고객id별로 다른 주소의 RabbitMQ에 연결되도록
+              var subscribeTopic = "/topic/serviceState" + clientId;
+              stompClient.subscribe(subscribeTopic, function (message) {
                 // handleServiceStateMessage(JSON.parse(message.body).text);
                 // #20 메시지 본문이 JSON 형식이 아님. JSON.parse를 사용하여 문자열을 파싱하려 했으나, RabbitMQ에서 전송된 메시지는 일반 텍스트 문자열임.
                 // 따라서, JSON으로 파싱하는 대신, 직접 문자열을 사용하여 조건 확인
@@ -149,7 +164,10 @@
         }
         // #20 RabbitMQ로부터 수신받은 메시지("배달완료" or "수거완료")를 기반으로 화면 표시
         function handleServiceStateMessage(message) {
-          console.log("Received message: ", message);
+          console.log(
+            "Received message for client " + clientId + ": ",
+            message
+          );
           // 이 코드에서는 querySelector를 사용하여 해당 ID를 가진 요소에 접근하고, 메시지에 따라 적절한 클래스를 추가하거나 제거하여 상태 표시기의 색을 변경
           var goingCircle = document.querySelector("#going .circle");
           var chargingStartCircle = document.querySelector(
