@@ -1,3 +1,5 @@
+<!-- //#23 T-Map appkey = 5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu -->
+
 <!-- //#16 웹화면 디자인 구성 -->
 <!-- //#17 웹화면 기능 구현 
 #17-1 [배달 완료] 또는 [수거 완료] 버튼 둘 중 하나만 활성화
@@ -8,6 +10,9 @@
 
 #19 버튼을 누르면, RabbitMQ로 메시지 송신
 #21 Driver에서 각각 다른 주소로 메시지 송신 (deliveries.csv의 client_id를 기반으로)
+
+#23 Driver의 실시간 위치를 RabbitMQ로 송신 및 지도로 
+
 -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -16,6 +21,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>Driver 웹화면 구상</title>
+    <!-- #23 TMAP API 스크립트 추가 -->
+    <script src="https://apis.openapi.sk.com/tmap/vectorjs?version=1&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu"></script>
+
     <!-- #19 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 
@@ -38,6 +46,8 @@
         flex-direction: column;
         justify-content: space-between;
         padding: 20px;
+        border: 3px solid #bd3535;
+        border-radius: 20px;
       }
       .map {
         flex: 1;
@@ -47,6 +57,11 @@
         align-items: center;
         color: white;
         font-size: 36px;
+      }
+      /* #23 실시간 위치를 지도로 표시 */
+      #map_div {
+        width: 100%;
+        height: 100%;
       }
       .header {
         font-size: 24px;
@@ -60,8 +75,8 @@
         gap: 10px;
         background-color: white;
         padding: 20px;
-        border: 1px solid #ff4848;
-        border-radius: 5px;
+        border: 1px solid #004785;
+        border-radius: 10px;
         margin-bottom: 20px;
       }
       .time-info {
@@ -148,15 +163,55 @@
           </button>
         </div>
       </div>
-      <div class="map">지도</div>
+      <div class="map">
+        <div id="map_div">
+          <!-- //#23 지도 시각화 -->
+        </div>
+      </div>
     </div>
 
     <!-- ========= 기능 구현 코드 ========= -->
     <script>
+      /* 
+      document.addEventListener("DOMContentLoaded", ... 에 대해
+      : 안전성을 높이기 위해 DOMContentLoaded 이벤트를 사용하는 것은 좋은 방법이지만, 모든 상황에 필수적인 것은 아님.
+      : DOM이 완전히 로드된 후에 각각의 코드들이 실행됨
+      - 이 이벤트 리스너는 HTML 문서의 내용이 완전히 로드되고 구문 분석이 완료되었을 때 실행됨.
+      - 신속한 인터랙션: 이 이벤트는 모든 이미지, 스타일시트 등이 로드될 때까지 기다리지 않기 때문에, 사용자가 보다 빠르게 페이지와 상호작용할 수 있도록 합니다.
+      - 종속성 관리: 스크립트가 특정 DOM 요소에 의존하는 경우, 이 요소들이 접근 가능한 상태에서만 스크립트가 실행됨을 보장합니다.
+      */
       document.addEventListener("DOMContentLoaded", function () {
-        // #19 RabbitMQ 서버 연결
-        var stompClient;
+        var stompClient; // #19 RabbitMQ 서버 연결
+        var deliveries = []; // #17-5
+        var currentIndex = 0; // #17-5 현재 데이터 순서를 확인하기 위한 변수
 
+        // 배달 유형 표시 문구
+        var deliveryType = document.getElementById("delivery-type");
+        // 위치 데이터 표시 문구    // #17-4 주석처리
+        // var latitudeDisplay = document.getElementById("latitude");
+        // var longitudeDisplay = document.getElementById("longitude");
+        // 도착지 표시 문구 (위도, 경도 -> 도로명주소)
+        var arrivalAddressDisplay = document.getElementById("arrivalAddress");
+        // 도착 시간 표시 문구
+        var arrivalTimeDisplay = document.getElementById("arrivalTime");
+
+        var deliveryCompleteBtn = document.getElementById("delivery-complete");
+        var pickupCompleteBtn = document.getElementById("pickup-complete");
+
+        // Sample JSON data - 추후 수리모형 팀에서 받아야 하는 데이터
+        //#17-5 CSV 파일 불러와서 데이터로 이용
+        Papa.parse("/static/deliveries.csv", {
+          download: true,
+          header: true,
+          complete: function (results) {
+            console.log("//#17-5 CSV 파일 불러오기");
+            deliveries = results.data;
+
+            updateDeliveryInfo(); // #17-5: 위치 이동 - 데이터 로드 후 처음에 한 번 정보를 업데이트
+          },
+        });
+
+        // #19 RabbitMQ 서버 연결
         function connectToRabbitMQ() {
           var ws = new WebSocket("ws://127.0.0.1:15674/ws");
           stompClient = Stomp.over(ws);
@@ -172,8 +227,9 @@
             }
           );
         }
-        // #19 버튼을 누르면, RabbitMQ로 메시지 송신
-        function sendRabbitMQMessage(message) {
+
+        //#19 버튼을 누르면, RabbitMQ로 메시지 송신
+        function sendStateToRabbitMQ(message) {
           // #21 Driver에서 각각 다른 주소로 메시지 송신 (deliveries.csv의 client_id를 기반으로)
           var clientId = deliveries[currentIndex].client_id; // 현재 배달의 고객 ID를 가져옵니다.
           var topic = "/topic/serviceState" + clientId; // 고객 ID에 따라 토픽을 동적으로 결정합니다.
@@ -195,33 +251,52 @@
           }
         }
 
-        // Sample JSON data - 추후 수리모형 팀에서 받아야 하는 데이터
-        //#17-5 CSV 파일 불러와서 데이터로 이용
-        var deliveries = [];
-        Papa.parse("/static/deliveries.csv", {
-          download: true,
-          header: true,
-          complete: function (results) {
-            console.log("//#17-5 CSV 파일 불러오기");
-            deliveries = results.data;
+        //#23 Driver의 실시간 위치를 RabbitMQ로 송신 및 지도로 표시
+        function sendPosToRabbitMQ(lat, lng) {
+          var locationData = JSON.stringify({ latitude: lat, longitude: lng });
+          if (stompClient.connected) {
+            stompClient.send("/topic/locationUpdate", {}, locationData);
+            console.log("Sent location data to RabbitMQ:", locationData);
+          } else {
+            console.log(
+              "WebSocker이 연결되어 있지 않음. Attempting to reconnect..."
+            );
+            connectToRabbitMQ();
+            setTimeout(function () {
+              if (stompClient.connected) {
+                stompClient.send("/topic/locationUpdate", {}, locationData);
+                console.log(
+                  "Sent location data to RabbitMQ after reconnecting:",
+                  locationData
+                );
+              } else {
+                console.log("Failed to reconnect WebSocket.");
+              }
+            }, 5000);
+          }
+        }
 
-            updateDeliveryInfo(); // #17-5: 위치 이동 - 데이터 로드 후 처음에 한 번 정보를 업데이트
-          },
-        });
+        //#23 Driver의 위치 얻기
+        function getDriverPos() {
+          navigator.geolocation.getCurrentPosition(function (position) {
+            var userLocation = new Tmapv3.LatLng(
+              position.coords.latitude,
+              position.coords.longitude
+            );
+            var marker = new Tmapv3.Marker({
+              position: userLocation,
+              map: map,
+            });
+            map.setCenter(userLocation);
+            console.log("얻은 위치 데이터: ", userLocation);
+            sendPosToRabbitMQ(
+              position.coords.latitude,
+              position.coords.longitude
+            );
+          });
+        }
 
-        var currentIndex = 0; // 현재 데이터 순서를 확인하기 위한 변수
-        // 배달 유형 표시 문구
-        var deliveryType = document.getElementById("delivery-type");
-        // 위치 데이터 표시 문구    // #17-4 주석처리
-        // var latitudeDisplay = document.getElementById("latitude");
-        // var longitudeDisplay = document.getElementById("longitude");
-        // 도착지 표시 문구 (위도, 경도 -> 도로명주소)
-        var arrivalAddressDisplay = document.getElementById("arrivalAddress");
-        // 도착 시간 표시 문구
-        var arrivalTimeDisplay = document.getElementById("arrivalTime");
-
-        var deliveryCompleteBtn = document.getElementById("delivery-complete");
-        var pickupCompleteBtn = document.getElementById("pickup-complete");
+        //#23 Papa.parse 기존 위치 -> 맨 위로 이동
 
         //#17-4 (TMAP API 이용) 기존 위도, 경도를 "도로명 주소"로 변환하고, 표시
         function updateAddress(latitude, longitude) {
@@ -291,9 +366,21 @@
         // // 초기 정보 표시 및 업데이트  // #17-5 csv 파일 가져온 후 실행되도록 Papa.parse 함수 안에 넣기
         // updateDeliveryInfo();
 
+        //#23 T-Map 시작 & 웹소켓 연결
+        function initTmap() {
+          map = new Tmapv3.Map("map_div", {
+            center: new Tmapv3.LatLng(37.5665, 126.978),
+            width: "100%",
+            height: "100%",
+            zoom: 16,
+          });
+          // connectToRabbitMQ(); // -> script 마지막 부분에 실행함
+          setInterval(getDriverPos, 3000); // Get User Position every 3 seconds
+        }
+
         // [배달 완료] 및 [수거 완료] 버튼에 이벤트 리스너 추가
         deliveryCompleteBtn.addEventListener("click", function () {
-          sendRabbitMQMessage("배달완료"); // #19 버튼을 누르면, RabbitMQ로 메시지 송신
+          sendStateToRabbitMQ("배달완료"); // #19 버튼을 누르면, RabbitMQ로 메시지 송신
 
           if (currentIndex < deliveries.length - 1) {
             currentIndex++; // 다음 데이터 (delivery_type, 위치 데이터) 표시
@@ -302,7 +389,7 @@
         });
 
         pickupCompleteBtn.addEventListener("click", function () {
-          sendRabbitMQMessage("수거완료"); // #19 버튼을 누르면, RabbitMQ로 메시지 송신
+          sendStateToRabbitMQ("수거완료"); // #19 버튼을 누르면, RabbitMQ로 메시지 송신
 
           if (currentIndex < deliveries.length - 1) {
             currentIndex++; // 다음 데이터 (delivery_type, 위치 데이터) 표시
@@ -310,8 +397,9 @@
           }
         });
 
-        // 실행 코드들
+        // ================ 실행 코드들 ================
         connectToRabbitMQ(); // 웹 페이지가 로드될 때 RabbitMQ에 연결
+        window.onload = initTmap; // Initialize TMap on window load
       });
     </script>
   </body>
