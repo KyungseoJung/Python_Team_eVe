@@ -47,3 +47,5 @@ def index():
 if __name__ == '__main__':
     app.run(debug=True)
     # app.run(debug=True, port=5001)  # 다른 포트(예: 5001)를 지정하여 실행
+
+    # 나중엔 debut=True 문 없애야 함

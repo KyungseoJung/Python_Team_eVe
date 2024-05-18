@@ -7,6 +7,7 @@
 #17-5 CSV파일로 저장되어 있는 배달 정보(deliveries.csv)를 JavaScript로 불러와서 데이터 이용
 
 #19 버튼을 누르면, RabbitMQ로 메시지 송신
+#21 Driver에서 각각 다른 주소로 메시지 송신 (deliveries.csv의 client_id를 기반으로)
 -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -15,7 +16,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>Driver 웹화면 구상</title>
-    <!-- #19 STOMP 프로토콜 연결 - Include the STOMP JavaScript client-->
+    <!-- #19 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 
     <!-- //#17-5 -->
@@ -153,9 +154,9 @@
     <!-- ========= 기능 구현 코드 ========= -->
     <script>
       document.addEventListener("DOMContentLoaded", function () {
-        // #19 RabbitMQ 서버 연결 - STOMP 프로토콜 연결
+        // #19 RabbitMQ 서버 연결
         var stompClient;
-        // Publisher - Subscriber 중 Publisher 입장
+
         function connectToRabbitMQ() {
           var ws = new WebSocket("ws://127.0.0.1:15674/ws");
           stompClient = Stomp.over(ws);
@@ -173,9 +174,12 @@
         }
         // #19 버튼을 누르면, RabbitMQ로 메시지 송신
         function sendRabbitMQMessage(message) {
+          // #21 Driver에서 각각 다른 주소로 메시지 송신 (deliveries.csv의 client_id를 기반으로)
+          var clientId = deliveries[currentIndex].client_id; // 현재 배달의 고객 ID를 가져옵니다.
+          var topic = "/topic/serviceState" + clientId; // 고객 ID에 따라 토픽을 동적으로 결정합니다.
+
           if (stompClient && stompClient.connected) {
-            // #19 RabbitMQ로 서비스 상태에 대한 데이터 송신
-            stompClient.send("/topic/serviceState", {}, message);
+            stompClient.send(topic, {}, message);
           } else {
             console.log(
               "Not connected to RabbitMQ. Attempting to reconnect..."
@@ -183,7 +187,7 @@
             connectToRabbitMQ();
             setTimeout(function () {
               if (stompClient.connected) {
-                stompClient.send("/topic/serviceState", {}, message);
+                stompClient.send(topic, {}, message);
               } else {
                 console.log("Failed to reconnect to RabbitMQ.");
               }
@@ -194,7 +198,7 @@
         // Sample JSON data - 추후 수리모형 팀에서 받아야 하는 데이터
         //#17-5 CSV 파일 불러와서 데이터로 이용
         var deliveries = [];
-        Papa.parse("/static/deliveries.csv", {
+        Papa.parse("/static/deliveries2.csv", {
           download: true,
           header: true,
           complete: function (results) {
