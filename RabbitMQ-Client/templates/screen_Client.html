@@ -1,9 +1,11 @@
+<!-- //#23 T-Map appkey = 5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu -->
+
 <!-- 
 //#18 고객 웹화면 디자인 구성 
 
 #20 고객 웹화면 - Driver 화면에서 누르는 버튼에 따라 RabbitMQ 메시지를 수신함으로써 (좌측 하단) 서비스 상태 표시 다르게 업데이트
 #22 고객의 수만큼 다른 웹페이지 실행되도록 & client_id에 따라 다른 RabbitMQ 주소를 부여받고, 그에 대한 데이터를 수신받도록
-
+#24 고객 화면 - Driver의 실시간 위치를 지도에 표시하기
 -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -11,6 +13,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>서비스 상태 확인</title>
+    <!-- #23 TMAP API 스크립트 추가 -->
+    <script src="https://apis.openapi.sk.com/tmap/vectorjs?version=1&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu"></script>
+
     <!-- #20 STOMP 프로토콜 연결 - Include the STOMP JavaScript client-->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 
@@ -30,6 +35,8 @@
         display: flex;
         flex-direction: column;
         padding: 20px;
+        border: 3px solid #1a7416;
+        border-radius: 20px;
       }
       .map {
         flex: 1;
@@ -40,8 +47,12 @@
         color: white;
         font-size: 36px;
       }
+      #map_div {
+        width: 100%;
+        height: 100%; /* #24 지도 높이 설정 */
+      }
       .header {
-        font-size: 30px;
+        font-size: 24px;
         font-weight: bold;
         text-align: center;
         margin-bottom: 30px;
@@ -52,6 +63,7 @@
         border: 2px solid #000;
         border-radius: 5px;
         margin-bottom: 230px; /* Increased spacing */
+        border-radius: 20px;
       }
       .service-detail {
         margin: 10px;
@@ -119,7 +131,10 @@
         </div>
         <!-- 여기까지 서비스 상태 표시 (status-indicators)-->
       </div>
-      <div class="map">지도</div>
+      <div class="map">
+        <div id="map_div"></div>
+        <!-- #24 지도 표시 영역 추가  -->
+      </div>
     </div>
 
     <!-- ========= 기능 구현 코드 ========= -->
@@ -127,6 +142,8 @@
       document.addEventListener("DOMContentLoaded", function () {
         // #20 RabbitMQ 서버 연결 - STOMP 프로토콜 연결
         var stompClient;
+        var map; // #24 지도 표시
+        var marker; // #24 지도 표시
 
         var clientId = "{{ clientId }}"; //#21 Jinja2 템플릿 구문을 사용하여 변수 값을 직접 받아옵니다.
         console.log("//#22 Flask로부터 전달받은 clientId 값: " + clientId);
@@ -139,8 +156,29 @@
         // );
         // console.log("//#22 url로부터 얻은 clientId = " + clientId);
 
-        // Publisher - Subscriber 중 Subscriber 입장
-        function connectAndSubscribe() {
+        // #24 "Driver의 위치"에 대해 Subscriber 입장 (Publisher - Subscriber 중)
+        function connectAndSubscribePos() {
+          var ws = new WebSocket("ws://127.0.0.1:15674/ws");
+          stompClient = Stomp.over(ws);
+          stompClient.connect(
+            "guest",
+            "guest",
+            function (frame) {
+              console.log("Connected: " + frame);
+              var subscribeTopic = "/topic/locationUpdate"; // 수정된 구독 주제
+              stompClient.subscribe(subscribeTopic, function (message) {
+                var locationData = JSON.parse(message.body);
+                updateMap(locationData.latitude, locationData.longitude);
+              });
+            },
+            function (error) {
+              console.log("STOMP error: " + error);
+            }
+          );
+        }
+
+        // #20 "서비스 상태"에 대해 Subscriber 입장 (Publisher - Subscriber 중)
+        function connectAndSubscribeState() {
           var ws = new WebSocket("ws://127.0.0.1:15674/ws"); // 이 주소는 RabbitMQ 서버의 웹소켓 주소임.
           stompClient = Stomp.over(ws);
           stompClient.connect(
@@ -162,6 +200,7 @@
             }
           );
         }
+
         // #20 RabbitMQ로부터 수신받은 메시지("배달완료" or "수거완료")를 기반으로 화면 표시
         function handleServiceStateMessage(message) {
           console.log(
@@ -195,7 +234,34 @@
           }
         }
 
-        connectAndSubscribe();
+        // #24 "Driver의 위치"에 대해 RabbitMQ로부터 메시지 수신 - 지도에 표시
+        function updateMap(latitude, longitude) {
+          var userLocation = new Tmapv3.LatLng(latitude, longitude);
+          if (marker) {
+            marker.setMap(null);
+          }
+          marker = new Tmapv3.Marker({
+            icon: "https://cdn-icons-png.flaticon.com/128/14975/14975104.png",
+            label: "Driver",
+            position: userLocation,
+            map: map,
+          });
+          map.setCenter(userLocation);
+        }
+
+        //#24 T-Map 시작 & 웹소켓 연결
+        function initTmap() {
+          map = new Tmapv3.Map("map_div", {
+            center: new Tmapv3.LatLng(37.5665, 126.978),
+            width: "100%",
+            height: "100%", // 전체 화면에 맞게 조정
+            zoom: 15,
+          });
+        }
+
+        initTmap(); // #24
+        connectAndSubscribeState();
+        connectAndSubscribePos(); // #24
       });
     </script>
   </body>
