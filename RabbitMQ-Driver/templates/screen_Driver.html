@@ -184,6 +184,7 @@
         var stompClient; // #19 RabbitMQ 서버 연결
         var deliveries = []; // #17-5
         var currentIndex = 0; // #17-5 현재 데이터 순서를 확인하기 위한 변수
+        var marker; //#23 최신 위치에 해당하는 marker가 지도에 1개만 표시되도록
 
         // 배달 유형 표시 문구
         var deliveryType = document.getElementById("delivery-type");
@@ -283,10 +284,19 @@
               position.coords.latitude,
               position.coords.longitude
             );
-            var marker = new Tmapv3.Marker({
-              position: userLocation,
-              map: map,
-            });
+
+            // 이미 marker가 있는지 확인
+            if (marker) {
+              // 이미 존재한다면, 그냥 기존에 있던 마커의 위치만 바꾸기
+              marker.setPosition(userLocation);
+            } else {
+              // 이미 존재하는 marker가 없다면, marker를 새로 생성
+              marker = new Tmapv3.Marker({
+                position: userLocation,
+                map: map,
+              });
+            }
+
             map.setCenter(userLocation);
             console.log("얻은 위치 데이터: ", userLocation);
             sendPosToRabbitMQ(
