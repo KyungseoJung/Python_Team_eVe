@@ -11,7 +11,9 @@
 #19 버튼을 누르면, RabbitMQ로 메시지 송신
 #21 Driver에서 각각 다른 주소로 메시지 송신 (deliveries.csv의 client_id를 기반으로)
 
-#23 Driver의 실시간 위치를 RabbitMQ로 송신 및 지도로 
+#23 Driver의 실시간 위치를 RabbitMQ로 송신 및 지도로 표시
+#26 관리자 페이지에서 deliveries.csv 관리하기 위해 구조 변경 - 절대적인 경로에서 (deliveries.csv) 파일 가져올 수 있도록 구조 변경(app_Driver.py)
+
 
 -->
 <!DOCTYPE html>
@@ -201,16 +203,27 @@
 
         // Sample JSON data - 추후 수리모형 팀에서 받아야 하는 데이터
         //#17-5 CSV 파일 불러와서 데이터로 이용
-        Papa.parse("/static/deliveries.csv", {
-          download: true,
-          header: true,
-          complete: function (results) {
-            console.log("//#17-5 CSV 파일 불러오기");
-            deliveries = results.data;
+        // 웹 브라우저에서 로컬 파일 시스템의 절대 경로(예: C:/GitStudy/...)를 직접 참조하는 것은 보안 상의 이유로 허용되지 않음.
+        // Papa.parse("/static/deliveries.csv", {
+        //   download: true,
+        //   header: true,
+        //   complete: function (results) {
+        //     console.log("//#17-5 CSV 파일 불러오기");
+        //     deliveries = results.data;
 
-            updateDeliveryInfo(); // #17-5: 위치 이동 - 데이터 로드 후 처음에 한 번 정보를 업데이트
-          },
-        });
+        //     updateDeliveryInfo(); // #17-5: 위치 이동 - 데이터 로드 후 처음에 한 번 정보를 업데이트
+        //   },
+        // });
+        // #26 구조 변경 - 절대적인 경로에서 파일 가져올 수 있도록
+        fetch("/deliveries")
+          .then((response) => response.text())
+          .then((csvString) => {
+            // Assuming the CSV file has headers that match the properties used below
+            let results = Papa.parse(csvString, { header: true });
+            deliveries = results.data;
+            updateDeliveryInfo();
+          })
+          .catch((error) => console.error("Error loading the CSV:", error));
 
         // #19 RabbitMQ 서버 연결
         function connectToRabbitMQ() {
