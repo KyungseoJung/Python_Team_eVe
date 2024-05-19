@@ -5,7 +5,10 @@
 
 #20 고객 웹화면 - Driver 화면에서 누르는 버튼에 따라 RabbitMQ 메시지를 수신함으로써 (좌측 하단) 서비스 상태 표시 다르게 업데이트
 #22 고객의 수만큼 다른 웹페이지 실행되도록 & client_id에 따라 다른 RabbitMQ 주소를 부여받고, 그에 대한 데이터를 수신받도록
-#24 고객 화면 - Driver의 실시간 위치를 지도에 표시하기
+#24 고객 화면 - Driver의 실시간 위치를 RabbitMQ로부터 수신 받아 지도에 표시하기
+#25 고객 화면 - Driver가 배달 중일 때만 위치 표시(즉, 수거하러 갈 때는 위치 표시X)하기.
+              "배달완료"하면 배터리 이미지 및 충전 종료 시간 띄우기, "수거완료"하면 "서비스 완료" 텍스트 띄우기
+              
 -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -40,7 +43,7 @@
       }
       .map {
         flex: 1;
-        background-color: #1e88e5;
+        background-color: #1a7416; /* #1e88e5;*/
         display: flex;
         justify-content: center;
         align-items: center;
@@ -110,12 +113,12 @@
           <div class="service-detail"><strong>예약 시간:</strong> 18:00</div>
         </div>
 
-        <!-- =============서비스 상태 표시 (가고 있어요)(충전을 시작했어요)(충전을 완료했어요)============= -->
+        <!-- =============서비스 상태 표시 (배달 중이에요)(충전을 시작했어요)(충전을 완료했어요)============= -->
         <!-- #20 id 추가 -->
         <div class="status-indicators" id="going">
           <div class="status-indicator">
             <div class="circle"></div>
-            <div>가고 있어요</div>
+            <div>배달 중이에요</div>
           </div>
 
           <!-- #20 id 추가 -->
@@ -134,6 +137,19 @@
       <div class="map">
         <div id="map_div"></div>
         <!-- #24 지도 표시 영역 추가  -->
+        <!-- #25 지도에 표시한 배터리 상태 -->
+        <div id="battery_status" style="display: none">
+          <img
+            id="battery_image"
+            src="https://cdn-icons-png.flaticon.com/128/3447/3447603.png"
+            alt="Battery Image"
+            style="width: 100px; height: auto"
+          />
+          <div id="charging_info">
+            <p>충전 시작 시간: <span id="charging_start_time"></span></p>
+            <p>예상 충전 종료 시간: <span id="charging_end_time"></span></p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -203,6 +219,11 @@
 
         // #20 RabbitMQ로부터 수신받은 메시지("배달완료" or "수거완료")를 기반으로 화면 표시
         function handleServiceStateMessage(message) {
+          //#25 변수 앞에서 정의
+          var mapDiv = document.getElementById("map_div");
+          var batteryStatus = document.getElementById("battery_status");
+          var chargingInfo = document.getElementById("charging_info");
+
           console.log(
             "Received message for client " + clientId + ": ",
             message
@@ -216,21 +237,40 @@
             "#chargingComplete .circle"
           );
 
-          if (message === "배달완료") {
-            // Set "가고 있어요" and "충전을 완료했어요" to inactive (grey)
-            goingCircle.classList.add("inactive");
-            chargingCompleteCircle.classList.add("inactive");
+          // #25 switch 문으로 설정
+          switch (message) {
+            case "배달완료":
+              // Set "가고 있어요" and "충전을 완료했어요" to inactive (grey)
+              goingCircle.classList.add("inactive");
+              chargingCompleteCircle.classList.add("inactive");
 
-            // Set "충전을 시작했어요" to active (green)
-            chargingStartCircle.classList.remove("inactive");
-          } else if (message === "수거완료") {
-            // Set "가고 있어요" and "충전을 시작했어요" to inactive (grey)
-            goingCircle.classList.add("inactive");
-            chargingStartCircle.classList.add("inactive");
+              // Set "충전을 시작했어요" to active (green)
+              chargingStartCircle.classList.remove("inactive");
 
-            // Set "충전을 완료했어요" to active (green)
+              mapDiv.style.display = "none"; // #25 배달완료 되면, 지도 표시 멈추기
+              batteryStatus.style.display = "block";
+              // #25 충전 시작 시간 & 예상 충전 종료 시간 표시
+              document.getElementById("charging_start_time").innerText =
+                "18:00";
+              document.getElementById("charging_end_time").innerText = "18:42";
 
-            chargingCompleteCircle.classList.remove("inactive");
+              break;
+
+            case "수거완료":
+              // Set "가고 있어요" and "충전을 시작했어요" to inactive (grey)
+              goingCircle.classList.add("inactive");
+              chargingStartCircle.classList.add("inactive");
+
+              // Set "충전을 완료했어요" to active (green)
+
+              chargingCompleteCircle.classList.remove("inactive");
+
+              // mapDiv.style.display = "none"; // #25 수거완료 되면, 지도 표시 멈추기 -> 이미 배달완료 때, 설정했으므로 필요 없을 듯
+              batteryStatus.style.display = "block";
+              document.getElementById("charging_start_time").innerText = "";
+              document.getElementById("charging_end_time").innerText =
+                "서비스가 완료되었습니다!";
+              break;
           }
         }
 
