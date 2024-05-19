@@ -7,8 +7,10 @@
 #22 고객의 수만큼 다른 웹페이지 실행되도록 & client_id에 따라 다른 RabbitMQ 주소를 부여받고, 그에 대한 데이터를 수신받도록
 #24 고객 화면 - Driver의 실시간 위치를 RabbitMQ로부터 수신 받아 지도에 표시하기
 #25 고객 화면 - Driver가 배달 중일 때만 위치 표시(즉, 수거하러 갈 때는 위치 표시X)하기.
-              "배달완료"하면 배터리 이미지 및 충전 종료 시간 띄우기, "수거완료"하면 "서비스 완료" 텍스트 띄우기
-              
+  "배달완료"하면 배터리 이미지 및 충전 종료 시간 띄우기, "수거완료"하면 "서비스 완료" 텍스트 띄우기
+#25-2 고객 화면 - "서비스 시작 시간"에 실시간 RabbitMQ로 "배달완료"메시지 왔을 때 시간 넣기,
+  "예상 서비스 완료 시간"에 deliveries.csv에 있는 time 값 넣기(단, 해당 client_id에 해당하면서 delivery_type이 "배달"일 때 행에 해당하는 time값)
+
 -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -97,6 +99,10 @@
       .status-indicator .circle.inactive {
         background-color: #cccccc;
       }
+      /* //#25-2 */
+      .hidden {
+        display: none;
+      }
     </style>
   </head>
   <body>
@@ -146,8 +152,17 @@
             style="width: 100px; height: auto"
           />
           <div id="charging_info">
-            <p>충전 시작 시간: <span id="charging_start_time"></span></p>
-            <p>예상 충전 종료 시간: <span id="charging_end_time"></span></p>
+            <!-- //#25 
+              서비스 시작 시간 = 배달 완료 시간 = 충전 시작 시간
+              서비스 완료 시간 = 수거 완료 시간 =/ 충전 완료 시간  
+              - 충전 완료 시간과 수거 시간 간에 Delay가 존재하지만, 고객 요청 시간 안에 수거한다는 뜻!
+                    -->
+            <p>서비스 시작 시간: <span id="service_start_time"></span></p>
+            <p>
+              예상 서비스 완료 시간:
+              <span id="expected_service_end_time"></span>
+            </p>
+            <p><span id="service_end_notice"></span></p>
           </div>
         </div>
       </div>
@@ -224,10 +239,6 @@
           var batteryStatus = document.getElementById("battery_status");
           var chargingInfo = document.getElementById("charging_info");
 
-          console.log(
-            "Received message for client " + clientId + ": ",
-            message
-          );
           // 이 코드에서는 querySelector를 사용하여 해당 ID를 가진 요소에 접근하고, 메시지에 따라 적절한 클래스를 추가하거나 제거하여 상태 표시기의 색을 변경
           var goingCircle = document.querySelector("#going .circle");
           var chargingStartCircle = document.querySelector(
@@ -237,22 +248,35 @@
             "#chargingComplete .circle"
           );
 
+          console.log(
+            "Received message for client " + clientId + ": ",
+            message
+          );
+
           // #25 switch 문으로 설정
           switch (message) {
             case "배달완료":
+              // #25-2 "배달완료" 메시지를 받은 해당 시간 저장
+              const deliveryCompleteTime = new Date().toLocaleTimeString(
+                "ko-KR",
+                { hour: "2-digit", minute: "2-digit" }
+              );
+
               // Set "가고 있어요" and "충전을 완료했어요" to inactive (grey)
               goingCircle.classList.add("inactive");
               chargingCompleteCircle.classList.add("inactive");
-
               // Set "충전을 시작했어요" to active (green)
               chargingStartCircle.classList.remove("inactive");
 
               mapDiv.style.display = "none"; // #25 배달완료 되면, 지도 표시 멈추기
               batteryStatus.style.display = "block";
               // #25 충전 시작 시간 & 예상 충전 종료 시간 표시
-              document.getElementById("charging_start_time").innerText =
-                "18:00";
-              document.getElementById("charging_end_time").innerText = "18:42";
+              document.getElementById("service_start_time").innerText =
+                deliveryCompleteTime;
+              // #25-2 동적으로 deliveries.csv 파일에서 해당 "고객"의 "수거" 시간을 찾아서 "expected_service_end_time"에 입력하기
+              // app_Client.py로부터 넘겨받은 deliveryTime 표시
+              document.getElementById("expected_service_end_time").innerText =
+                "{{ deliveryTime }}";
 
               break;
 
@@ -267,8 +291,15 @@
 
               // mapDiv.style.display = "none"; // #25 수거완료 되면, 지도 표시 멈추기 -> 이미 배달완료 때, 설정했으므로 필요 없을 듯
               batteryStatus.style.display = "block";
-              document.getElementById("charging_start_time").innerText = "";
-              document.getElementById("charging_end_time").innerText =
+              // "서비스 시작 시간"과 "예상 서비스 완료 시간"에 'hidden' class를 추가해서 감추기
+              document
+                .querySelector("#service_start_time")
+                .parentNode.classList.add("hidden");
+              document
+                .querySelector("#expected_service_end_time")
+                .parentNode.classList.add("hidden");
+
+              document.getElementById("service_end_notice").innerText =
                 "서비스가 완료되었습니다!";
               break;
           }
