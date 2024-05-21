@@ -1,4 +1,4 @@
-<!-- // T-Map appkey = 5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu -->
+"<!-- // T-Map appkey = 5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu -->
 
 <!-- //#26 관리자(Administrator) 웹화면 디자인 구성 -->
 <!-- //#27 관리자 웹페이지 디자인 -->
@@ -10,28 +10,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>관리자 페이지</title>
     <style>
+      /* //#27 
+      Body나 HTML 태그의 마진 또는 패딩: 기본적으로 브라우저는 HTML 페이지의 body 태그에 마진이나 패딩을 자동으로 추가하기 때문에 공백이 발생할 수 있음
+      -> 이를 제거하려면 CSS에서 body와 html 태그의 마진과 패딩을 0으로 설정해야 함.
+      불필요한 태그나 공백: HTML 코드 내에 불필요한 공백이나 태그가 있을 경우 이를 정리함. */
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
       body {
         font-family: Arial, sans-serif;
       }
       .navbar {
+        /* //#27 불필요한 공백 제거 */
+        margin-top: 0;
+        padding-top: 0;
+
         background: #333;
-        padding: 10px 20px;
+        padding: 10px 40px;
         color: white;
         text-align: right;
       }
       .button {
         color: white;
         background: gray;
-        padding: 10px 20px;
+        padding: 10px 40px;
         border: none;
         cursor: pointer;
         margin-right: 10px;
+        font-size: 17px; /* Larger font size */
       }
       .button.active {
         background: red;
       }
       /* [주문 관리] 페이지 화면 속 버튼 */
-      .button-box1 {
+      .button-check {
         /* color: white;
         background: gray;
         padding: 10px 20px;
@@ -42,12 +56,34 @@
         color: black;
         background: #ffd8d8; /* Dark grey background */
         border: 1.5px solid #000000;
+        padding: 10px 40px; /* Larger buttons */
+        cursor: pointer;
+        font-size: 20px; /* Larger font size */
+        border-radius: 5px; /* Rounded corners */
+      }
+      .button-calculate {
+        color: white;
+        background: #000000; /* Dark grey background */
+        border: 1.5px solid #ffffff;
+        padding: 10px 20px; /* Larger buttons */
+        cursor: pointer;
+        font-size: 20px; /* Larger font size */
+        border-radius: 5px; /* Rounded corners */
+      }
+      .button-save {
+        color: white;
+        background: #000000; /* Dark grey background */
+        border: 1.5px solid #000000;
         padding: 10px 30px; /* Larger buttons */
         cursor: pointer;
         font-size: 20px; /* Larger font size */
         border-radius: 5px; /* Rounded corners */
       }
       #content {
+        /* //#27 불필요한 공백 제거 */
+        margin-top: 0;
+        padding-top: 0;
+
         padding: 20px;
         display: flex;
         justify-content: space-around;
@@ -104,6 +140,11 @@
         pointer-events: none;
         opacity: 0.4;
       }
+      /* #27 데이터 테이블 스크롤 가능하도록 */
+      .table-container {
+        overflow-y: auto;
+        max-height: 400px;
+      } /* Scrollable container */
     </style>
   </head>
   <body>
@@ -122,14 +163,37 @@
       <div id="order" class="section visible">
         <div class="panel">
           <h2>주문 데이터 확인</h2>
-          <button class="button-box1" onclick="loadCSVData()">
+          <button class="button-check" onclick="loadCSVData()">
+            <img
+              src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
+              alt="Load Icon"
+              style="
+                height: 30px;
+                width: 30px;
+                vertical-align: middle;
+                margin-right: 5px;
+              "
+            />
+
             Load CSV Data
           </button>
-          <table id="data-table"></table>
+          <div class="table-container">
+            <table id="data-table"></table>
+          </div>
         </div>
         <div class="panel">
           <h2>경로 계산</h2>
-          <button class="button-box1" onclick="calculatePath()">
+          <button class="button-calculate" onclick="calculatePath()">
+            <img
+              src="https://cdn-icons-png.flaticon.com/128/9422/9422848.png"
+              alt="Load Icon"
+              style="
+                height: 30px;
+                width: 30px;
+                vertical-align: middle;
+                margin-right: 5px;
+              "
+            />
             경로 계산하기
           </button>
           <div class="loader-container hidden">
@@ -139,7 +203,19 @@
             <!-- 로딩바 완료 메시지 -->
             <span id="completeLabel" class="hidden">Complete!</span>
           </div>
-          <button class="button-box1" onclick="saveFile()">파일 저장</button>
+          <button class="button-save" onclick="saveFile()">
+            <img
+              src="https://cdn-icons-png.flaticon.com/128/2480/2480719.png"
+              alt="Load Icon"
+              style="
+                height: 30px;
+                width: 30px;
+                vertical-align: middle;
+                margin-right: 5px;
+              "
+            />
+            파일 저장
+          </button>
         </div>
       </div>
       <div id="delivery" class="section">
@@ -151,6 +227,14 @@
     </div>
 
     <script>
+      //#27 경로 계산 전에는 버튼 비활성화 되어 있도록
+      document.querySelectorAll(".button-check").forEach((btn) => {
+        btn.classList.add("disabled");
+      });
+      document.querySelectorAll(".button-save").forEach((btn) => {
+        btn.classList.add("disabled");
+      });
+
       function showSection(section) {
         document.querySelectorAll(".section").forEach((sec) => {
           sec.classList.remove("visible");
@@ -185,23 +269,38 @@
             width++;
             loaderBar.style.width = `${width}%`;
           }
-        }, 100);
+        }, 10);
       }
 
       function disableButtons() {
         document.querySelectorAll(".button").forEach((btn) => {
           btn.classList.add("disabled");
         });
-        document.querySelectorAll(".button-box1").forEach((btn) => {
+        //#27 이미 비활성화 되어있음
+        // document.querySelectorAll(".button-check").forEach((btn) => {
+        //   btn.classList.add("disabled");
+        // });
+        document.querySelectorAll(".button-calculate").forEach((btn) => {
           btn.classList.add("disabled");
         });
+        //#27 이미 비활성화 되어있음
+        // document.querySelectorAll(".button-save").forEach((btn) => {
+        //   btn.classList.add("disabled");
+        // });
       }
 
       function enableButtons() {
         document.querySelectorAll(".button").forEach((btn) => {
           btn.classList.remove("disabled");
         });
-        document.querySelectorAll(".button-box1").forEach((btn) => {
+        document.querySelectorAll(".button-check").forEach((btn) => {
+          btn.classList.remove("disabled");
+        });
+        //#27
+        // document.querySelectorAll(".button-calculate").forEach((btn) => {
+        //   btn.classList.remove("disabled");
+        // });
+        document.querySelectorAll(".button-save").forEach((btn) => {
           btn.classList.remove("disabled");
         });
       }
@@ -212,7 +311,7 @@
       }
 
       function loadCSVData() {
-        fetch("/path/to/your/deliveries.csv")
+        fetch("/static/deliveries.csv")
           .then((response) => response.text())
           .then((data) => {
             const rows = data.split("\n").map((row) => row.split(","));
@@ -235,3 +334,4 @@
     </script>
   </body>
 </html>
+"
