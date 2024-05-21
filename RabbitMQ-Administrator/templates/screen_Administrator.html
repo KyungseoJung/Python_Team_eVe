@@ -1,0 +1,237 @@
+<!-- // T-Map appkey = 5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu -->
+
+<!-- //#26 관리자(Administrator) 웹화면 디자인 구성 -->
+<!-- //#27 관리자 웹페이지 디자인 -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>관리자 페이지</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+      }
+      .navbar {
+        background: #333;
+        padding: 10px 20px;
+        color: white;
+        text-align: right;
+      }
+      .button {
+        color: white;
+        background: gray;
+        padding: 10px 20px;
+        border: none;
+        cursor: pointer;
+        margin-right: 10px;
+      }
+      .button.active {
+        background: red;
+      }
+      /* [주문 관리] 페이지 화면 속 버튼 */
+      .button-box1 {
+        /* color: white;
+        background: gray;
+        padding: 10px 20px;
+        border: none;
+        cursor: pointer;
+        margin-right: 10px; */
+
+        color: black;
+        background: #ffd8d8; /* Dark grey background */
+        border: 1.5px solid #000000;
+        padding: 10px 30px; /* Larger buttons */
+        cursor: pointer;
+        font-size: 20px; /* Larger font size */
+        border-radius: 5px; /* Rounded corners */
+      }
+      #content {
+        padding: 20px;
+        display: flex;
+        justify-content: space-around;
+      }
+      .panel {
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin: 20px;
+        width: 48%;
+      }
+      .section {
+        display: none;
+        flex: 1;
+        margin: 0 10px;
+        border: 1px solid #ccc;
+        padding: 10px;
+      }
+      .visible {
+        display: flex;
+      }
+      table,
+      th,
+      td {
+        border: 1px solid black;
+        border-collapse: collapse;
+        padding: 8px;
+      }
+      .hidden {
+        display: none;
+      }
+      .loader-container {
+        display: flex;
+        align-items: center;
+        margin-top: 20px;
+        margin-bottom: 20px;
+        gap: 20px;
+      }
+      .loader {
+        width: 100px;
+        height: 20px;
+        background: gray;
+      }
+      .loader-bar {
+        height: 100%;
+        background: lightgreen;
+        width: 0%;
+      }
+      /* complete 됐을 때, 초록색으로 로딩바 가득 채우기 */
+      .complete {
+        background-color: green;
+        width: 100% !important;
+      }
+      .disabled {
+        pointer-events: none;
+        opacity: 0.4;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="navbar">
+      <button class="button active" onclick="showSection('order')">
+        주문 관리
+      </button>
+      <button class="button" onclick="showSection('delivery')">
+        배달 관리
+      </button>
+      <button class="button" onclick="showSection('battery')">
+        배터리 관리
+      </button>
+    </div>
+    <div id="content">
+      <div id="order" class="section visible">
+        <div class="panel">
+          <h2>주문 데이터 확인</h2>
+          <button class="button-box1" onclick="loadCSVData()">
+            Load CSV Data
+          </button>
+          <table id="data-table"></table>
+        </div>
+        <div class="panel">
+          <h2>경로 계산</h2>
+          <button class="button-box1" onclick="calculatePath()">
+            경로 계산하기
+          </button>
+          <div class="loader-container hidden">
+            <div class="loader">
+              <div class="loader-bar"></div>
+            </div>
+            <!-- 로딩바 완료 메시지 -->
+            <span id="completeLabel" class="hidden">Complete!</span>
+          </div>
+          <button class="button-box1" onclick="saveFile()">파일 저장</button>
+        </div>
+      </div>
+      <div id="delivery" class="section">
+        <h2>구현 예정입니다~</h2>
+      </div>
+      <div id="battery" class="section">
+        <h2>구현 예정입니다~</h2>
+      </div>
+    </div>
+
+    <script>
+      function showSection(section) {
+        document.querySelectorAll(".section").forEach((sec) => {
+          sec.classList.remove("visible");
+        });
+        document.querySelectorAll(".button").forEach((btn) => {
+          btn.classList.remove("active");
+          btn.disabled = false; // Enable all buttons
+        });
+        document.getElementById(section).classList.add("visible");
+        document
+          .querySelector(`.button[onclick="showSection('${section}')"]`)
+          .classList.add("active");
+      }
+
+      function calculatePath() {
+        disableButtons(); // 다른 버튼들 모두 비활성화
+        const loaderContainer = document.querySelector(".loader-container");
+        const loaderBar = document.querySelector(".loader-bar");
+        const completeLabel = document.getElementById("completeLabel");
+        loaderContainer.classList.remove("hidden");
+        let width = 0;
+        const interval = setInterval(() => {
+          if (width >= 100) {
+            clearInterval(interval);
+            alert("경로 계산 완료");
+            // loaderBar.style.width = "0%";
+            loaderBar.className = "loader-bar complete"; // 경로 계산 마침 - 계속 초록색으로 로딩바 채워져 있도록 (Complete!)
+            completeLabel.classList.remove("hidden");
+            loaderContainer.classList.add("hidden");
+            enableButtons(); // 다른 버튼들 모두 활성화
+          } else {
+            width++;
+            loaderBar.style.width = `${width}%`;
+          }
+        }, 100);
+      }
+
+      function disableButtons() {
+        document.querySelectorAll(".button").forEach((btn) => {
+          btn.classList.add("disabled");
+        });
+        document.querySelectorAll(".button-box1").forEach((btn) => {
+          btn.classList.add("disabled");
+        });
+      }
+
+      function enableButtons() {
+        document.querySelectorAll(".button").forEach((btn) => {
+          btn.classList.remove("disabled");
+        });
+        document.querySelectorAll(".button-box1").forEach((btn) => {
+          btn.classList.remove("disabled");
+        });
+      }
+
+      function saveFile() {
+        alert("파일이 저장되었습니다!");
+        // Placeholder for file saving function
+      }
+
+      function loadCSVData() {
+        fetch("/path/to/your/deliveries.csv")
+          .then((response) => response.text())
+          .then((data) => {
+            const rows = data.split("\n").map((row) => row.split(","));
+            const table = document.getElementById("data-table");
+            table.innerHTML = ""; // Clear previous data
+            rows.forEach((row, index) => {
+              const tr = document.createElement("tr");
+              row.forEach((cell) => {
+                const td = document.createElement("td");
+                td.textContent = cell;
+                tr.appendChild(td);
+              });
+              table.appendChild(tr);
+            });
+          })
+          .catch((error) => {
+            alert("Error loading data: " + error);
+          });
+      }
+    </script>
+  </body>
+</html>
