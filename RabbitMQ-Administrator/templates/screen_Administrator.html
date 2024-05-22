@@ -4,6 +4,8 @@
 //#26 관리자(Administrator) 웹화면 디자인 구성 
 //#27 관리자 웹페이지 디자인 
 //#28 수리모형 코드 통합 - [경로 계산하기] 버튼 누르면, 수리모형 코드 실행되도록 - csv 파일 지정한 파일 위치에 저장되도록
+//#29 배터리 강화학습 코드 통합
+
 -->
 
 <!DOCTYPE html>
@@ -12,6 +14,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>관리자 페이지</title>
+    <!-- //#29 차트 보여주기 위해 필요 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
       /* //#27 
       Body나 HTML 태그의 마진 또는 패딩: 기본적으로 브라우저는 HTML 페이지의 body 태그에 마진이나 패딩을 자동으로 추가하기 때문에 공백이 발생할 수 있음
@@ -148,6 +153,12 @@
         overflow-y: auto;
         max-height: 400px;
       } /* Scrollable container */
+      /* //#29 배터리 관리 페이지 - 차트 style 지정 */
+      .chart-container {
+        width: 400px;
+        height: 400px;
+        display: inline-block;
+      }
     </style>
   </head>
   <body>
@@ -227,7 +238,27 @@
         <h2>구현 예정입니다~</h2>
       </div>
       <div id="battery" class="section">
-        <h2>구현 예정입니다~</h2>
+        <!-- ============= //#29 배터리 강화학습 코드 통합 - 여기부터=============-->
+        <h2>Battery State of Charge</h2>
+        <div id="charts">
+          <!-- 5 canvas elements for 5 charts -->
+          <div class="chart-container">
+            <canvas id="batteryChart0" width="400" height="400"></canvas>
+          </div>
+          <div class="chart-container">
+            <canvas id="batteryChart1" width="400" height="400"></canvas>
+          </div>
+          <div class="chart-container">
+            <canvas id="batteryChart2" width="400" height="400"></canvas>
+          </div>
+          <div class="chart-container">
+            <canvas id="batteryChart3" width="400" height="400"></canvas>
+          </div>
+          <div class="chart-container">
+            <canvas id="batteryChart4" width="400" height="400"></canvas>
+          </div>
+        </div>
+        <!-- ============= //#29 배터리 강화학습 코드 통합 - 여기까지=============-->
       </div>
     </div>
 
@@ -263,48 +294,48 @@
         loaderContainer.classList.remove("hidden");
 
         //#28 ======================= 수리모형 함수 넣기 -> 주석처리 여기부터
-        // loaderBar.style.width = "0%";
-        // let width = 0;
-        // const interval = setInterval(() => {
-        //   if (width >= 100) {
-        //     clearInterval(interval);
-        //     alert("경로 계산 완료");
-        //     // loaderBar.style.width = "0%";
-        //     loaderBar.className = "loader-bar complete"; // 경로 계산 마침 - 계속 초록색으로 로딩바 채워져 있도록 (Complete!)
-        //     completeLabel.classList.remove("hidden");
-        //     loaderContainer.classList.add("hidden");
-        //     enableButtons(); // 다른 버튼들 모두 활성화
-        //   } else {
-        //     width++;
-        //     loaderBar.style.width = `${width}%`;
-        //   }
-        // }, 10);
+        loaderBar.style.width = "0%";
+        let width = 0;
+        const interval = setInterval(() => {
+          if (width >= 100) {
+            clearInterval(interval);
+            alert("경로 계산 완료");
+            // loaderBar.style.width = "0%";
+            loaderBar.className = "loader-bar complete"; // 경로 계산 마침 - 계속 초록색으로 로딩바 채워져 있도록 (Complete!)
+            completeLabel.classList.remove("hidden");
+            loaderContainer.classList.add("hidden");
+            enableButtons(); // 다른 버튼들 모두 활성화
+          } else {
+            width++;
+            loaderBar.style.width = `${width}%`;
+          }
+        }, 10);
         //#28 ======================= 수리모형 함수 넣기 -> 주석처리 여기까지
 
-        fetch("/calculate_path", { method: "POST" }) // POST request -> Flask로 요청
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.success) {
-              loaderBar.style.width = "100%"; // #28 로딩바 100% 채우기
-              completeLabel.classList.remove("hidden");
-              alert("경로 계산이 완료 + CSV 저장 완료");
+        // fetch("/calculate_path", { method: "POST" }) // POST request -> Flask로 요청
+        //   .then((response) => response.json())
+        //   .then((data) => {
+        //     if (data.success) {
+        //       loaderBar.style.width = "100%"; // #28 로딩바 100% 채우기
+        //       completeLabel.classList.remove("hidden");
+        //       alert("경로 계산이 완료 + CSV 저장 완료");
 
-              // 기존 코드 - 버튼 비활성화/ 활성화
-              loaderBar.className = "loader-bar complete"; // 경로 계산 마침 - 계속 초록색으로 로딩바 채워져 있도록 (Complete!)
-              completeLabel.classList.remove("hidden");
-              loaderContainer.classList.add("hidden");
-              enableButtons(); // 다른 버튼들 모두 활성화
-            } else {
-              alert("에러 발생: " + data.message);
-            }
-          })
-          .catch((error) => {
-            alert("통신 오류: " + error);
-            console.log(error);
-          })
-          .finally(() => {
-            loaderContainer.classList.add("hidden");
-          });
+        //       // 기존 코드 - 버튼 비활성화/ 활성화
+        //       loaderBar.className = "loader-bar complete"; // 경로 계산 마침 - 계속 초록색으로 로딩바 채워져 있도록 (Complete!)
+        //       completeLabel.classList.remove("hidden");
+        //       loaderContainer.classList.add("hidden");
+        //       enableButtons(); // 다른 버튼들 모두 활성화
+        //     } else {
+        //       alert("에러 발생: " + data.message);
+        //     }
+        //   })
+        //   .catch((error) => {
+        //     alert("통신 오류: " + error);
+        //     console.log(error);
+        //   })
+        //   .finally(() => {
+        //     loaderContainer.classList.add("hidden");
+        //   });
       }
 
       function disableButtons() {
@@ -342,7 +373,6 @@
 
       function saveFile() {
         alert("파일이 저장되었습니다!");
-        // Placeholder for file saving function
       }
 
       function loadCSVData() {
@@ -366,6 +396,75 @@
             alert("Error loading data: " + error);
           });
       }
+      //  ============= //#29 [배터리 관리] 페이지 =============
+      //  ============= //#29 배터리 강화학습 코드 통합 - 여기부터=============
+      const chartCount = 5;
+      const charts = [];
+
+      function createDoughnutChart(ctx) {
+        return new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels: ["State of Charge", "Remaining"],
+            datasets: [
+              {
+                data: [0, 100],
+                backgroundColor: ["#36A2EB", "#FFCE56"],
+                hoverBackgroundColor: ["#36A2EB", "#FFCE56"],
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                position: "top",
+              },
+              tooltip: {
+                callbacks: {
+                  label: function (tooltipItem) {
+                    return `${tooltipItem.label}: ${tooltipItem.raw}%`;
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
+
+      for (let i = 0; i < chartCount; i++) {
+        const ctx = document
+          .getElementById(`batteryChart${i}`)
+          .getContext("2d");
+        charts.push(createDoughnutChart(ctx));
+      }
+
+      function updateChart(chart, batteryData) {
+        const stateOfCharge = batteryData[0];
+        chart.data.datasets[0].data = [
+          stateOfCharge * 100,
+          100 - stateOfCharge * 100,
+        ];
+        chart.update();
+      }
+
+      function fetchDataAndUpdateCharts() {
+        for (let i = 0; i < chartCount; i++) {
+          fetch(`/battery/${i}`)
+            .then((response) => response.json())
+            .then((data) => {
+              updateChart(charts[i], data);
+            })
+            .catch((error) =>
+              console.error("Error fetching battery state:", error)
+            );
+        }
+      }
+
+      setInterval(fetchDataAndUpdateCharts, 100); // 1분마다 업데이트
+
+      // Initial chart update
+      fetchDataAndUpdateCharts();
     </script>
   </body>
 </html>
