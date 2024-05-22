@@ -1,7 +1,10 @@
-"<!-- // T-Map appkey = 5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu -->
+<!-- // T-Map appkey = 5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu -->
 
-<!-- //#26 관리자(Administrator) 웹화면 디자인 구성 -->
-<!-- //#27 관리자 웹페이지 디자인 -->
+<!-- 
+//#26 관리자(Administrator) 웹화면 디자인 구성 
+//#27 관리자 웹페이지 디자인 
+//#28 수리모형 코드 통합 - [경로 계산하기] 버튼 누르면, 수리모형 코드 실행되도록 - csv 파일 지정한 파일 위치에 저장되도록
+-->
 
 <!DOCTYPE html>
 <html lang="en">
@@ -201,7 +204,9 @@
               <div class="loader-bar"></div>
             </div>
             <!-- 로딩바 완료 메시지 -->
-            <span id="completeLabel" class="hidden">Complete!</span>
+            <span id="completeLabel" class="hidden"
+              >Complete! 파일 저장 완료</span
+            >
           </div>
           <button class="button-save" onclick="saveFile()">
             <img
@@ -251,25 +256,55 @@
 
       function calculatePath() {
         disableButtons(); // 다른 버튼들 모두 비활성화
+
         const loaderContainer = document.querySelector(".loader-container");
         const loaderBar = document.querySelector(".loader-bar");
         const completeLabel = document.getElementById("completeLabel");
         loaderContainer.classList.remove("hidden");
-        let width = 0;
-        const interval = setInterval(() => {
-          if (width >= 100) {
-            clearInterval(interval);
-            alert("경로 계산 완료");
-            // loaderBar.style.width = "0%";
-            loaderBar.className = "loader-bar complete"; // 경로 계산 마침 - 계속 초록색으로 로딩바 채워져 있도록 (Complete!)
-            completeLabel.classList.remove("hidden");
+
+        //#28 ======================= 수리모형 함수 넣기 -> 주석처리 여기부터
+        // loaderBar.style.width = "0%";
+        // let width = 0;
+        // const interval = setInterval(() => {
+        //   if (width >= 100) {
+        //     clearInterval(interval);
+        //     alert("경로 계산 완료");
+        //     // loaderBar.style.width = "0%";
+        //     loaderBar.className = "loader-bar complete"; // 경로 계산 마침 - 계속 초록색으로 로딩바 채워져 있도록 (Complete!)
+        //     completeLabel.classList.remove("hidden");
+        //     loaderContainer.classList.add("hidden");
+        //     enableButtons(); // 다른 버튼들 모두 활성화
+        //   } else {
+        //     width++;
+        //     loaderBar.style.width = `${width}%`;
+        //   }
+        // }, 10);
+        //#28 ======================= 수리모형 함수 넣기 -> 주석처리 여기까지
+
+        fetch("/calculate_path", { method: "POST" }) // POST request -> Flask로 요청
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              loaderBar.style.width = "100%"; // #28 로딩바 100% 채우기
+              completeLabel.classList.remove("hidden");
+              alert("경로 계산이 완료 + CSV 저장 완료");
+
+              // 기존 코드 - 버튼 비활성화/ 활성화
+              loaderBar.className = "loader-bar complete"; // 경로 계산 마침 - 계속 초록색으로 로딩바 채워져 있도록 (Complete!)
+              completeLabel.classList.remove("hidden");
+              loaderContainer.classList.add("hidden");
+              enableButtons(); // 다른 버튼들 모두 활성화
+            } else {
+              alert("에러 발생: " + data.message);
+            }
+          })
+          .catch((error) => {
+            alert("통신 오류: " + error);
+            console.log(error);
+          })
+          .finally(() => {
             loaderContainer.classList.add("hidden");
-            enableButtons(); // 다른 버튼들 모두 활성화
-          } else {
-            width++;
-            loaderBar.style.width = `${width}%`;
-          }
-        }, 10);
+          });
       }
 
       function disableButtons() {
@@ -334,4 +369,3 @@
     </script>
   </body>
 </html>
-"
