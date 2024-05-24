@@ -163,8 +163,11 @@
   </head>
   <body>
     <div class="navbar">
-      <button class="button active" onclick="showSection('order')">
-        주문 관리
+      <button class="button active" onclick="showSection('appendAndSolve')">
+        주문 전략
+      </button>
+      <button class="button" onclick="showSection('orderCheck')">
+        주문 확인
       </button>
       <button class="button" onclick="showSection('delivery')">
         배달 관리
@@ -174,7 +177,8 @@
       </button>
     </div>
     <div id="content">
-      <div id="order" class="section visible">
+      <!-- ============= //#29 [전략 도출] 페이지 - 수리모형 코드 통합 - 여기부터 =============-->
+      <div id="appendAndSolve" class="section visible">
         <div class="panel">
           <h2>주문 데이터 확인</h2>
           <button class="button-check" onclick="loadCSVData()">
@@ -234,9 +238,20 @@
           </button>
         </div>
       </div>
-      <div id="delivery" class="section">
-        <h2>구현 예정입니다~</h2>
+      <!-- ============= //#29 [전략 도출] 페이지 - 수리모형 코드 통합 - 여기까지 =============-->
+
+      <!-- ============= //#30 [주문 관리] 페이지 - 여기부터 =============-->
+      <div id="orderCheck" class="section">
+        <h2>구현 예정입니다~1</h2>
       </div>
+      <!-- ============= //#29 [주문 관리] 페이지 - 여기까지 =============-->
+
+      <!-- ============= //[배달 관리] 페이지 - 여기부터 =============-->
+      <div id="delivery" class="section">
+        <h2>구현 예정입니다~2</h2>
+      </div>
+      <!-- ============= //[배달 관리] 페이지 - 여기까지 =============-->
+
       <div id="battery" class="section">
         <!-- ============= //#29 배터리 강화학습 코드 통합 - 여기부터=============-->
         <h2>Battery State of Charge</h2>
@@ -263,6 +278,8 @@
     </div>
 
     <script>
+      //  ============= //#28 [전략 도출] 페이지 - 수리모형 코드 통합 - 여기부터 =============
+
       //#27 경로 계산 전에는 버튼 비활성화 되어 있도록
       document.querySelectorAll(".button-check").forEach((btn) => {
         btn.classList.add("disabled");
@@ -294,48 +311,48 @@
         loaderContainer.classList.remove("hidden");
 
         //#28 ======================= 수리모형 함수 넣기 -> 주석처리 여기부터
-        loaderBar.style.width = "0%";
-        let width = 0;
-        const interval = setInterval(() => {
-          if (width >= 100) {
-            clearInterval(interval);
-            alert("경로 계산 완료");
-            // loaderBar.style.width = "0%";
-            loaderBar.className = "loader-bar complete"; // 경로 계산 마침 - 계속 초록색으로 로딩바 채워져 있도록 (Complete!)
-            completeLabel.classList.remove("hidden");
-            loaderContainer.classList.add("hidden");
-            enableButtons(); // 다른 버튼들 모두 활성화
-          } else {
-            width++;
-            loaderBar.style.width = `${width}%`;
-          }
-        }, 10);
+        // loaderBar.style.width = "0%";
+        // let width = 0;
+        // const interval = setInterval(() => {
+        //   if (width >= 100) {
+        //     clearInterval(interval);
+        //     alert("경로 계산 완료");
+        //     // loaderBar.style.width = "0%";
+        //     loaderBar.className = "loader-bar complete"; // 경로 계산 마침 - 계속 초록색으로 로딩바 채워져 있도록 (Complete!)
+        //     completeLabel.classList.remove("hidden");
+        //     loaderContainer.classList.add("hidden");
+        //     enableButtons(); // 다른 버튼들 모두 활성화
+        //   } else {
+        //     width++;
+        //     loaderBar.style.width = `${width}%`;
+        //   }
+        // }, 10);
         //#28 ======================= 수리모형 함수 넣기 -> 주석처리 여기까지
 
-        // fetch("/calculate_path", { method: "POST" }) // POST request -> Flask로 요청
-        //   .then((response) => response.json())
-        //   .then((data) => {
-        //     if (data.success) {
-        //       loaderBar.style.width = "100%"; // #28 로딩바 100% 채우기
-        //       completeLabel.classList.remove("hidden");
-        //       alert("경로 계산이 완료 + CSV 저장 완료");
+        fetch("/calculate_path", { method: "POST" }) // POST request -> Flask로 요청
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              loaderBar.style.width = "100%"; // #28 로딩바 100% 채우기
+              completeLabel.classList.remove("hidden");
+              alert("경로 계산이 완료 + CSV 저장 완료");
 
-        //       // 기존 코드 - 버튼 비활성화/ 활성화
-        //       loaderBar.className = "loader-bar complete"; // 경로 계산 마침 - 계속 초록색으로 로딩바 채워져 있도록 (Complete!)
-        //       completeLabel.classList.remove("hidden");
-        //       loaderContainer.classList.add("hidden");
-        //       enableButtons(); // 다른 버튼들 모두 활성화
-        //     } else {
-        //       alert("에러 발생: " + data.message);
-        //     }
-        //   })
-        //   .catch((error) => {
-        //     alert("통신 오류: " + error);
-        //     console.log(error);
-        //   })
-        //   .finally(() => {
-        //     loaderContainer.classList.add("hidden");
-        //   });
+              // 기존 코드 - 버튼 비활성화/ 활성화
+              loaderBar.className = "loader-bar complete"; // 경로 계산 마침 - 계속 초록색으로 로딩바 채워져 있도록 (Complete!)
+              completeLabel.classList.remove("hidden");
+              loaderContainer.classList.add("hidden");
+              enableButtons(); // 다른 버튼들 모두 활성화
+            } else {
+              alert("에러 발생: " + data.message);
+            }
+          })
+          .catch((error) => {
+            alert("통신 오류: " + error);
+            console.log(error);
+          })
+          .finally(() => {
+            loaderContainer.classList.add("hidden");
+          });
       }
 
       function disableButtons() {
@@ -396,6 +413,8 @@
             alert("Error loading data: " + error);
           });
       }
+      //  ============= //#28 [전략 도출] 페이지 - 수리모형 코드 통합 - 여기까지 =============
+
       //  ============= //#29 [배터리 관리] 페이지 =============
       //  ============= //#29 배터리 강화학습 코드 통합 - 여기부터=============
       const chartCount = 5;
@@ -465,6 +484,9 @@
 
       // Initial chart update
       fetchDataAndUpdateCharts();
+
+      //  ============= //#29 [배터리 관리] 페이지 =============
+      //  ============= 배터리 강화학습 코드 통합 - 여기까지=============
     </script>
   </body>
 </html>
