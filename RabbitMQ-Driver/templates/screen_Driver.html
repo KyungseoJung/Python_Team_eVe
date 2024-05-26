@@ -174,14 +174,14 @@
 
     <!-- ========= 기능 구현 코드 ========= -->
     <script>
-      /* 
-      document.addEventListener("DOMContentLoaded", ... 에 대해
-      : 안전성을 높이기 위해 DOMContentLoaded 이벤트를 사용하는 것은 좋은 방법이지만, 모든 상황에 필수적인 것은 아님.
-      : DOM이 완전히 로드된 후에 각각의 코드들이 실행됨
-      - 이 이벤트 리스너는 HTML 문서의 내용이 완전히 로드되고 구문 분석이 완료되었을 때 실행됨.
-      - 신속한 인터랙션: 이 이벤트는 모든 이미지, 스타일시트 등이 로드될 때까지 기다리지 않기 때문에, 사용자가 보다 빠르게 페이지와 상호작용할 수 있도록 합니다.
-      - 종속성 관리: 스크립트가 특정 DOM 요소에 의존하는 경우, 이 요소들이 접근 가능한 상태에서만 스크립트가 실행됨을 보장합니다.
-      */
+      /*
+            document.addEventListener("DOMContentLoaded", ... 에 대해
+            : 안전성을 높이기 위해 DOMContentLoaded 이벤트를 사용하는 것은 좋은 방법이지만, 모든 상황에 필수적인 것은 아님.
+            : DOM이 완전히 로드된 후에 각각의 코드들이 실행됨
+            - 이 이벤트 리스너는 HTML 문서의 내용이 완전히 로드되고 구문 분석이 완료되었을 때 실행됨.
+            - 신속한 인터랙션: 이 이벤트는 모든 이미지, 스타일시트 등이 로드될 때까지 기다리지 않기 때문에, 사용자가 보다 빠르게 페이지와 상호작용할 수 있도록 합니다.
+            - 종속성 관리: 스크립트가 특정 DOM 요소에 의존하는 경우, 이 요소들이 접근 가능한 상태에서만 스크립트가 실행됨을 보장합니다.
+            */
       document.addEventListener("DOMContentLoaded", function () {
         var stompClient; // #19 RabbitMQ 서버 연결
         var deliveries = []; // #17-5
@@ -247,9 +247,13 @@
           // #21 Driver에서 각각 다른 주소로 메시지 송신 (deliveries.csv의 client_id를 기반으로)
           var clientId = deliveries[currentIndex].client_id; // 현재 배달의 고객 ID를 가져옵니다.
           var topic = "/topic/serviceState" + clientId; // 고객 ID에 따라 토픽을 동적으로 결정합니다.
+          var completeTopic = "/topic/serviceComplete"; //#30-3 "수거완료"(즉, 서비스 완료)된 데이터에 대해서 고객 ID를 데이터로 보내기
 
           if (stompClient && stompClient.connected) {
             stompClient.send(topic, {}, message);
+            if (message == "수거완료") {
+              stompClient.send(completeTopic, {}, clientId); // #30-3
+            }
           } else {
             console.log(
               "Not connected to RabbitMQ. Attempting to reconnect..."
@@ -258,6 +262,9 @@
             setTimeout(function () {
               if (stompClient.connected) {
                 stompClient.send(topic, {}, message);
+                if (message == "수거완료") {
+                  stompClient.send(completeTopic, {}, clientId); // #30-3
+                }
               } else {
                 console.log("Failed to reconnect to RabbitMQ.");
               }

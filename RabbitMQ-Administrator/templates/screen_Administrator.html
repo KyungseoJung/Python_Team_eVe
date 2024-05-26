@@ -5,6 +5,12 @@
 //#27 관리자 웹페이지 디자인 
 //#28 수리모형 코드 통합 - [경로 계산하기] 버튼 누르면, 수리모형 코드 실행되도록 - csv 파일 지정한 파일 위치에 저장되도록
 //#29 배터리 강화학습 코드 통합
+//#30 [주문 관리] 페이지 
+//#30-2 [주문 관리] 페이지 - 테이블 및 지도 동적 기능
+//#30-3 RabbitMQ로부터 데이터를 수신해서 표에 표시(screen_Driver.html과 통신)
+
+//#31 디자인
+
 
 -->
 
@@ -16,9 +22,17 @@
     <title>관리자 페이지</title>
     <!-- //#29 차트 보여주기 위해 필요 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- //#30 [주문 관리] 페이지에서 "도로명 주소" 얻기 위함 -->
+    <script src="https://apis.openapi.sk.com/tmap/js?version=1&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu"></script>
+    <!-- //#30 [주문 관리] 페이지에서 지도 보여주기 위함 -->
+    <script src="https://apis.openapi.sk.com/tmap/vectorjs?version=1&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu"></script>
+
+    <!-- #30-3 RabbitMQ로부터 데이터를 수신해서 표에 표시 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script> -->
 
     <style>
-      /* //#27 
+      /* //#27
       Body나 HTML 태그의 마진 또는 패딩: 기본적으로 브라우저는 HTML 페이지의 body 태그에 마진이나 패딩을 자동으로 추가하기 때문에 공백이 발생할 수 있음
       -> 이를 제거하려면 CSS에서 body와 html 태그의 마진과 패딩을 0으로 설정해야 함.
       불필요한 태그나 공백: HTML 코드 내에 불필요한 공백이나 태그가 있을 경우 이를 정리함. */
@@ -52,7 +66,7 @@
       .button.active {
         background: red;
       }
-      /* [주문 관리] 페이지 화면 속 버튼 */
+      /* ============= //#28 [전략 도출] 페이지 - 여기부터 =============--> */
       .button-check {
         /* color: white;
         background: gray;
@@ -112,13 +126,48 @@
       .visible {
         display: flex;
       }
-      table,
+      /* table,
       th,
       td {
         border: 1px solid black;
         border-collapse: collapse;
         padding: 8px;
+      } */
+      table {
+        border: 1px solid #006ab1; /* Light blue border */
+
+        width: 100%; /* Full width to use available space */
+        border-collapse: collapse; /* Ensures borders are merged */
       }
+
+      th,
+      td {
+        border: 1px solid #2c5282; /* Navy blue border for readability */
+        text-align: left; /* Align text to the left */
+        padding: 12px 15px; /* Comfortable padding around text */
+        word-wrap: break-word; /* Prevents text overflow */
+      }
+
+      th {
+        background-color: #2980b9; /* Slightly lighter navy color for headers */
+        font-weight: bold; /* Make header fonts bold */
+      }
+
+      tr:nth-child(odd) {
+        background-color: #34495e; /* Zebra striping for rows */
+      }
+
+      tr:hover {
+        background-color: #3498db; /* Highlight on hover for better interaction feedback */
+      }
+
+      /* Specifically target the street address column for wider display */
+      td:last-child,
+      th:last-child {
+        min-width: 200px; /* Minimum width */
+        max-width: 300px; /* Maximum width */
+      }
+
       .hidden {
         display: none;
       }
@@ -149,22 +198,38 @@
         opacity: 0.4;
       }
       /* #27 데이터 테이블 스크롤 가능하도록 */
+      /* #31 디자인 추가 */
       .table-container {
-        overflow-y: auto;
-        max-height: 400px;
+        overflow-x: auto; /* Allows horizontal scrolling if the table is too wide */
+        max-width: 700px;
+        max-height: 400px; /* Set a maximum height */
+
+        background-color: #2c3e50; /* Dark navy background */
+        color: #ecf0f1; /* White text for better readability */
+        border-radius: 8px; /* Rounded corners */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+        padding: 15px; /* Padding around the table */
       } /* Scrollable container */
+      /* ============= //#28 [전략 도출] 페이지 - 여기까지 =============--> */
+
+      /* ============= //#30 [주문 관리] 페이지 - 여기부터 ============= */
+
+      /* ============= //#30 [주문 관리] 페이지 - 여기까지 ============= */
+
+      /* ============= //#29 [배터리 관리] 페이지 - 여기부터 ============= */
       /* //#29 배터리 관리 페이지 - 차트 style 지정 */
       .chart-container {
         width: 400px;
         height: 400px;
         display: inline-block;
       }
+      /* ============= //#29 [배터리 관리] 페이지 - 여기까지 ============= */
     </style>
   </head>
   <body>
     <div class="navbar">
       <button class="button active" onclick="showSection('appendAndSolve')">
-        주문 전략
+        전략 도출
       </button>
       <button class="button" onclick="showSection('orderCheck')">
         주문 확인
@@ -177,7 +242,7 @@
       </button>
     </div>
     <div id="content">
-      <!-- ============= //#29 [전략 도출] 페이지 - 수리모형 코드 통합 - 여기부터 =============-->
+      <!-- ============= //#28 [전략 도출] 페이지 - 수리모형 코드 통합 - 여기부터 =============-->
       <div id="appendAndSolve" class="section visible">
         <div class="panel">
           <h2>주문 데이터 확인</h2>
@@ -238,13 +303,51 @@
           </button>
         </div>
       </div>
-      <!-- ============= //#29 [전략 도출] 페이지 - 수리모형 코드 통합 - 여기까지 =============-->
+      <!-- ============= //#28 [전략 도출] 페이지 - 수리모형 코드 통합 - 여기까지 =============-->
 
       <!-- ============= //#30 [주문 관리] 페이지 - 여기부터 =============-->
       <div id="orderCheck" class="section">
-        <h2>구현 예정입니다~1</h2>
+        <div class="panel">
+          <h2>주문 데이터</h2>
+          <button class="button-check" onclick="loadOrderData()">
+            <img
+              src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
+              alt="Load Icon"
+              style="
+                height: 30px;
+                width: 30px;
+                vertical-align: middle;
+                margin-right: 5px;
+              "
+            />
+
+            주문 정보 불러오기
+          </button>
+          <div class="table-container">
+            <table id="orderTable"></table>
+          </div>
+        </div>
+        <div class="panel">
+          <h2>주문 Map</h2>
+          <button class="button-check" onclick="initOrderMap()">
+            <img
+              src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
+              alt="Load Icon"
+              style="
+                height: 30px;
+                width: 30px;
+                vertical-align: middle;
+                margin-right: 5px;
+              "
+            />
+
+            주문 Map 불러오기
+          </button>
+
+          <div id="orderMapDiv" style="width: 100%; height: 400px"></div>
+        </div>
       </div>
-      <!-- ============= //#29 [주문 관리] 페이지 - 여기까지 =============-->
+      <!-- ============= //#30 [주문 관리] 페이지 - 여기까지 =============-->
 
       <!-- ============= //[배달 관리] 페이지 - 여기부터 =============-->
       <div id="delivery" class="section">
@@ -280,10 +383,10 @@
     <script>
       //  ============= //#28 [전략 도출] 페이지 - 수리모형 코드 통합 - 여기부터 =============
 
-      //#27 경로 계산 전에는 버튼 비활성화 되어 있도록
-      document.querySelectorAll(".button-check").forEach((btn) => {
-        btn.classList.add("disabled");
-      });
+      //#27 경로 계산 전에는 버튼 비활성화 되어 있도록  //#30 주석처리
+      // document.querySelectorAll(".button-check").forEach((btn) => {
+      //   btn.classList.add("disabled");
+      // });
       document.querySelectorAll(".button-save").forEach((btn) => {
         btn.classList.add("disabled");
       });
@@ -392,98 +495,402 @@
         alert("파일이 저장되었습니다!");
       }
 
-      function loadCSVData() {
-        fetch("/static/deliveries.csv")
+      // function loadCSVData() {
+      //   fetch("/static/deliveries.csv")
+      //     .then((response) => response.text())
+      //     .then((data) => {
+      //       const rows = data.split("\n").map((row) => row.split(","));
+      //       const table = document.getElementById("data-table");
+      //       table.innerHTML = ""; // Clear previous data
+      //       rows.forEach((row, index) => {
+      //         const tr = document.createElement("tr");
+      //         row.forEach((cell) => {
+      //           const td = document.createElement("td");
+      //           td.textContent = cell;
+      //           tr.appendChild(td);
+      //         });
+      //         table.appendChild(tr);
+      //       });
+      //     })
+      //     .catch((error) => {
+      //       alert("Error loading data: " + error);
+      //     });
+      // }
+
+      //  ============= //#28 [전략 도출] 페이지 - 수리모형 코드 통합 - 여기까지 =============
+
+      //  ============= //#30 [주문 관리] 페이지 - 여기부터 =============
+      var orderMap;
+      var markers = []; // Global array to hold markers
+      var selectedMarker = null; // To keep track of the selected marker
+
+      // #30 latitude,longitude를 통해서 "도로명 주소"를 column으로 나타내기
+      function loadOrderData() {
+        fetch("/static/orders.csv")
           .then((response) => response.text())
           .then((data) => {
-            const rows = data.split("\n").map((row) => row.split(","));
-            const table = document.getElementById("data-table");
-            table.innerHTML = ""; // Clear previous data
-            rows.forEach((row, index) => {
-              const tr = document.createElement("tr");
-              row.forEach((cell) => {
-                const td = document.createElement("td");
-                td.textContent = cell;
-                tr.appendChild(td);
+            // const rows = data.split("\n").map((row) => row.split(","));
+            // Filters out empty rows and checks for non-empty first cell
+            //#30 비어있는 행(empty rows)을 확인(=row에 2개 이상에 데이터가 있는지 확인) && 1번째 셀이 비어있는지 확인 - 비어있는 csv 파일을 보이도록 하지 않기 위해
+            const rows = data
+              .split("\n")
+              .map((row) => row.split(","))
+              .filter((row) => row.length > 1 && row[0]);
+
+            // #28 latitude,longitude 컬럼 제외하고 "도로명주소" 컬럼 추가
+            const headers = rows[0]; // headers가 1번째 행에 있다고 가정
+            const latIndex = headers.indexOf("latitude"); // 새로운 column 삭제
+            const lonIndex = headers.indexOf("longitude"); // 새로운 column 삭제
+            headers.push("도로명주소"); // 새로운 column 추가
+            const table = document.getElementById("orderTable");
+            table.innerHTML = ""; // 이전 데이터 Clear
+
+            // header 행 생성
+            const headerRow = document.createElement("tr");
+            headers.forEach((header) => {
+              const th = document.createElement("th");
+              th.textContent = header;
+              headerRow.appendChild(th);
+            });
+            table.appendChild(headerRow);
+
+            // 각 데이터 행 처리
+            const dataRows = rows.slice(1); // header에 해당하는 행은 제외하고~ 시작
+            Promise.all(
+              dataRows.map((row) => {
+                const latitude = row[latIndex];
+                const longitude = row[lonIndex];
+
+                console.log("Latitude:", latitude, "Longitude:", longitude); // #30 debug 목적 코드
+
+                return getAddress(latitude, longitude).then((address) => {
+                  row.push(address); // 도로명주소 데이터를 row 값에 추가
+                  return row;
+                });
+              })
+            ).then((processedRows) => {
+              // processedRows.forEach((row) => { // #30-2 주석처리 (row) -> (row, index)
+              processedRows.forEach((row, index) => {
+                const tr = document.createElement("tr");
+                row.forEach((cell) => {
+                  const td = document.createElement("td");
+                  td.textContent = cell;
+                  tr.appendChild(td);
+                });
+                // #30-2 테이블 클릭하면, 지도에 표시되도록
+                tr.onclick = () =>
+                  highlightClientData(
+                    index,
+                    parseFloat(row[latIndex]),
+                    parseFloat(row[lonIndex])
+                  );
+
+                table.appendChild(tr);
               });
-              table.appendChild(tr);
             });
           })
           .catch((error) => {
             alert("Error loading data: " + error);
           });
       }
-      //  ============= //#28 [전략 도출] 페이지 - 수리모형 코드 통합 - 여기까지 =============
 
-      //  ============= //#29 [배터리 관리] 페이지 =============
-      //  ============= //#29 배터리 강화학습 코드 통합 - 여기부터=============
-      const chartCount = 5;
-      const charts = [];
+      // #30 위도, 경도를 바탕으로 도로명 주소 return
+      function getAddress(latitude, longitude) {
+        // 오류 발생 시, 잡아서 처리할 수 있도록
+        return new Promise((resolve, reject) => {
+          // #30 에러 확인용 코드
+          if (!latitude || !longitude) {
+            reject("Latitude or longitude is undefined");
+            return;
+          }
 
-      function createDoughnutChart(ctx) {
-        return new Chart(ctx, {
-          type: "doughnut",
-          data: {
-            labels: ["State of Charge", "Remaining"],
-            datasets: [
-              {
-                data: [0, 100],
-                backgroundColor: ["#36A2EB", "#FFCE56"],
-                hoverBackgroundColor: ["#36A2EB", "#FFCE56"],
-              },
-            ],
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: {
-                position: "top",
-              },
-              tooltip: {
-                callbacks: {
-                  label: function (tooltipItem) {
-                    return `${tooltipItem.label}: ${tooltipItem.raw}%`;
-                  },
-                },
-              },
-            },
-          },
+          var xhr = new XMLHttpRequest();
+          xhr.open(
+            "GET",
+            `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${latitude}&lon=${longitude}&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu`
+          );
+          xhr.onload = () => {
+            if (xhr.status === 200) {
+              var response = JSON.parse(xhr.responseText);
+              resolve(response.addressInfo.fullAddress); // Return the full address
+            } else {
+              reject("Failed to fetch address");
+            }
+          };
+          xhr.onerror = () => {
+            reject("Network request failed");
+          };
+          xhr.send();
         });
       }
 
-      for (let i = 0; i < chartCount; i++) {
-        const ctx = document
-          .getElementById(`batteryChart${i}`)
-          .getContext("2d");
-        charts.push(createDoughnutChart(ctx));
+      // #30 고객 주문 정보를 Map으로 보여주기
+      // 지도 시작 및 업데이트
+      function initOrderMap() {
+        fetch("/static/orders.csv")
+          .then((response) => response.text())
+          .then((data) => {
+            const rows = data.split("\n").map((row) => row.split(","));
+            if (rows.length < 2) return; // Ensure there is data
+
+            // 지도에 마커 표시하기 위함
+            const headers = rows[0];
+            const latIndex = headers.indexOf("latitude");
+            const lonIndex = headers.indexOf("longitude");
+            // 지도에 툴팁으로 고객 정보 표시하기 위함
+            const clientIndex = headers.indexOf("client_id");
+            const chargeAmountIndex = headers.indexOf("charge_amount");
+
+            let latSum = 0,
+              lonSum = 0,
+              validCount = 0;
+
+            rows.slice(1).forEach((row) => {
+              // 지도에 마커 표시하기 위함
+              const latitude = parseFloat(row[latIndex]);
+              const longitude = parseFloat(row[lonIndex]);
+
+              if (!isNaN(latitude) && !isNaN(longitude)) {
+                latSum += latitude;
+                lonSum += longitude;
+                validCount++;
+              }
+            });
+
+            if (validCount > 0) {
+              const centerLat = latSum / validCount;
+              const centerLon = lonSum / validCount;
+
+              //이미 지도 활성화 되었다면, just reset the center and clear old markers
+              if (orderMap) {
+                orderMap.setCenter(new Tmapv3.LatLng(centerLat, centerLon));
+                clearMarkers(); // 이미 markers가 존재한다면, Clear
+              } else {
+                // (첫 활성화) 지도 활성화 - Initialize the map for the first time
+                orderMap = new Tmapv3.Map("orderMapDiv", {
+                  center: new Tmapv3.LatLng(centerLat, centerLon),
+                  width: "100%",
+                  height: "400px",
+                  zoom: 12,
+                });
+              }
+
+              // 마커들 Load and display
+              loadMarkers(
+                rows,
+                latIndex,
+                lonIndex,
+                clientIndex,
+                chargeAmountIndex
+              );
+            }
+          })
+          .catch((error) => console.error("Error loading CSV data:", error));
       }
 
-      function updateChart(chart, batteryData) {
-        const stateOfCharge = batteryData[0];
-        chart.data.datasets[0].data = [
-          stateOfCharge * 100,
-          100 - stateOfCharge * 100,
-        ];
-        chart.update();
+      // 지도에서 모든 markers Clear
+      function clearMarkers() {
+        markers.forEach((marker) => marker.setMap(null)); // 지도에서 모든 markers 삭제
+        markers = []; // Reset the markers array
       }
 
-      function fetchDataAndUpdateCharts() {
-        for (let i = 0; i < chartCount; i++) {
-          fetch(`/battery/${i}`)
-            .then((response) => response.json())
-            .then((data) => {
-              updateChart(charts[i], data);
-            })
-            .catch((error) =>
-              console.error("Error fetching battery state:", error)
-            );
+      // 지도에 markers 로드하는 함수
+      function loadMarkers(
+        rows,
+        latIndex,
+        lonIndex,
+        clientIndex,
+        chargeAmountIndex
+      ) {
+        rows.slice(1).forEach((row) => {
+          // 지도에 마커 표시하기 위함
+          const latitude = parseFloat(row[latIndex]);
+          const longitude = parseFloat(row[lonIndex]);
+
+          if (!isNaN(latitude) && !isNaN(longitude)) {
+            // Ensure coordinates are valid
+            let marker = new Tmapv3.Marker({
+              // title: `Client ID: ${clientId}, Charge: ${chargeAmount}`, // Simple tooltip
+              // title: "강조",
+              label: "Driver",
+
+              position: new Tmapv3.LatLng(latitude, longitude),
+              map: orderMap,
+            });
+            markers.push(marker); //marker 저장
+          }
+        });
+      }
+
+      // #30-2 [주문 관리] 페이지 - 테이블 동적 기능
+      function highlightClientData(index, lat, lon) {
+        // ============ 테이블 하이라이트 ============
+        // Reset any previously selected row
+        document.querySelectorAll("#orderTable tr").forEach((tr) => {
+          // tr.style.backgroundColor = ""; // Reset background color
+          if (tr.style.backgroundColor != "green") {
+            // Only reset rows that are not marked complete
+            tr.style.backgroundColor = ""; // Reset background color
+          }
+        });
+
+        // Highlight the new selected row
+        const selectedRow = document.querySelector(
+          `#orderTable tr:nth-child(${index + 2})`
+        ); // +2 because nth-child is 1-based and includes header
+        if (selectedRow.style.backgroundColor != "green") {
+          // Do not change color if already marked complete
+          selectedRow.style.backgroundColor = "red";
+        }
+
+        // ============ 지도 하이라이트 ============
+        // 새로운 선택을 한 마커 외의 다른 마커들은 원상태로 (Reset the icon of the previously selected marker)
+        if (selectedMarker) {
+          selectedMarker.setMap(null); // Remove the old marker
+
+          let newMarker = new Tmapv3.Marker({
+            position: new Tmapv3.LatLng(
+              selectedMarker.getPosition().lat(),
+              selectedMarker.getPosition().lng()
+            ),
+            map: orderMap,
+          });
+          markers[selectedMarkerIndex] = newMarker; // Replace the old marker with the new one
+        }
+
+        // 새로 선택한 고객의 마커 하이라이트 표시 (Set the new selected marker)
+        selectedMarker = markers[index];
+        selectedMarkerIndex = index; // Keep track of the selected index
+        selectedMarker.setMap(null); // Remove the old marker
+        selectedMarker = new Tmapv3.Marker({
+          position: new Tmapv3.LatLng(lat, lon),
+          map: orderMap,
+          // icon: "https://cdn-icons-png.flaticon.com/128/14034/14034740.png",
+          icon: "/static/image/redMarker.png",
+          size: new Tmapv3.Size(0.1, 0.1), // 아이콘의 크기 설정
+        });
+        markers[index] = selectedMarker; // Update the array with the new highlighted marker
+      }
+
+      // #30-3 RabbitMQ 통신
+      function connectToRabbitMQ() {
+        var ws = new WebSocket("ws://127.0.0.1:15674/ws");
+        var stompClient = Stomp.over(ws);
+        stompClient.connect(
+          "guest",
+          "guest",
+          function (frame) {
+            console.log("//#30-3 Connected: " + frame);
+            // Subscribe to a pattern if possible, or a general topic that gets all messages
+            var subscirbeTopic = "/topic/serviceComplete";
+            //RabbitMQ 데이터 수신받는 경로 - "수거완료"(즉, 서비스 완료)된 데이터에 대해서 고객 ID를 데이터로 받기
+
+            stompClient.subscribe(subscirbeTopic, function (message) {
+              console.log("//#30-3 데이터 수신 - 고객 ID: " + message.body);
+              updateRowColor(message.body);
+            });
+          },
+          function (error) {
+            console.log("WebSocket error: " + error);
+          }
+        );
+      }
+
+      function updateRowColor(clientId) {
+        var table = document.getElementById("orderTable");
+        var columnIndex = 0; // Assume client_id is the first column, adjust if necessary
+        // Find the index for 'client_id' column
+        var headers = table.rows[0].cells;
+        for (var j = 0; j < headers.length; j++) {
+          if (headers[j].textContent.trim().toLowerCase() === "client id") {
+            columnIndex = j;
+            break;
+          }
+        }
+        // Change row color to green where client_id matches
+        for (var i = 1; i < table.rows.length; i++) {
+          var row = table.rows[i];
+          if (row.cells[columnIndex].textContent.trim() === clientId) {
+            row.style.backgroundColor = "green";
+            break;
+          }
         }
       }
 
-      setInterval(fetchDataAndUpdateCharts, 100); // 1분마다 업데이트
+      // connectToRabbitMQ() 함수를 통해 RabbitMQ 통신 시작
+      connectToRabbitMQ();
 
-      // Initial chart update
-      fetchDataAndUpdateCharts();
+      //  ============= //#30 [주문 관리] 페이지 - 여기까지 =============
+
+      //  ============= //#29 [배터리 관리] 페이지 =============
+      //  ============= //배터리 강화학습 코드 통합 - 여기부터=============
+      // const chartCount = 5;
+      // const charts = [];
+
+      // function createDoughnutChart(ctx) {
+      //   return new Chart(ctx, {
+      //     type: "doughnut",
+      //     data: {
+      //       labels: ["State of Charge", "Remaining"],
+      //       datasets: [
+      //         {
+      //           data: [0, 100],
+      //           backgroundColor: ["#36A2EB", "#FFCE56"],
+      //           hoverBackgroundColor: ["#36A2EB", "#FFCE56"],
+      //         },
+      //       ],
+      //     },
+      //     options: {
+      //       responsive: true,
+      //       plugins: {
+      //         legend: {
+      //           position: "top",
+      //         },
+      //         tooltip: {
+      //           callbacks: {
+      //             label: function (tooltipItem) {
+      //               return `${tooltipItem.label}: ${tooltipItem.raw}%`;
+      //             },
+      //           },
+      //         },
+      //       },
+      //     },
+      //   });
+      // }
+
+      // for (let i = 0; i < chartCount; i++) {
+      //   const ctx = document
+      //     .getElementById(`batteryChart${i}`)
+      //     .getContext("2d");
+      //   charts.push(createDoughnutChart(ctx));
+      // }
+
+      // function updateChart(chart, batteryData) {
+      //   const stateOfCharge = batteryData[0];
+      //   chart.data.datasets[0].data = [
+      //     stateOfCharge * 100,
+      //     100 - stateOfCharge * 100,
+      //   ];
+      //   chart.update();
+      // }
+
+      // function fetchDataAndUpdateCharts() {
+      //   for (let i = 0; i < chartCount; i++) {
+      //     fetch(`/battery/${i}`)
+      //       .then((response) => response.json())
+      //       .then((data) => {
+      //         updateChart(charts[i], data);
+      //       })
+      //       .catch((error) =>
+      //         console.error("Error fetching battery state:", error)
+      //       );
+      //   }
+      // }
+
+      // setInterval(fetchDataAndUpdateCharts, 100); // 1분마다 업데이트
+
+      // // Initial chart update
+      // fetchDataAndUpdateCharts();
 
       //  ============= //#29 [배터리 관리] 페이지 =============
       //  ============= 배터리 강화학습 코드 통합 - 여기까지=============
