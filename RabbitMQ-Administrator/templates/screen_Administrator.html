@@ -5,12 +5,13 @@
 //#27 관리자 웹페이지 디자인 
 //#28 수리모형 코드 통합 - [경로 계산하기] 버튼 누르면, 수리모형 코드 실행되도록 - csv 파일 지정한 파일 위치에 저장되도록
 //#29 배터리 강화학습 코드 통합
+
 //#30 [주문 관리] 페이지 
 //#30-2 [주문 관리] 페이지 - 테이블 및 지도 동적 기능
 //#30-3 RabbitMQ로부터 데이터를 수신해서 표에 표시(screen_Driver.html과 통신)
 
 //#31 디자인
-
+//#32 [전략 도출] 페이지 - 테이블 생성 및 표시 & 로딩바 표시
 
 -->
 
@@ -183,11 +184,11 @@
         height: 20px;
         background: gray;
       }
-      .loader-bar {
+      /* .loader-bar {
         height: 100%;
         background: lightgreen;
         width: 0%;
-      }
+      } */
       /* complete 됐을 때, 초록색으로 로딩바 가득 채우기 */
       .complete {
         background-color: green;
@@ -210,6 +211,27 @@
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
         padding: 15px; /* Padding around the table */
       } /* Scrollable container */
+
+      /* //#32 로딩 이미지 */
+      .spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border-left-color: #09f;
+
+        animation: spin 1s infinite linear;
+      }
+      /* //#32 로딩 이미지 */
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
       /* ============= //#28 [전략 도출] 페이지 - 여기까지 =============--> */
 
       /* ============= //#30 [주문 관리] 페이지 - 여기부터 ============= */
@@ -246,7 +268,7 @@
       <div id="appendAndSolve" class="section visible">
         <div class="panel">
           <h2>주문 데이터 확인</h2>
-          <button class="button-check" onclick="loadCSVData()">
+          <button class="button-check" onclick="loadOrderData()">
             <img
               src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
               alt="Load Icon"
@@ -261,11 +283,11 @@
             Load CSV Data
           </button>
           <div class="table-container">
-            <table id="data-table"></table>
+            <table id="orderTable"></table>
           </div>
         </div>
         <div class="panel">
-          <h2>경로 계산</h2>
+          <h2>전략 도출</h2>
           <button class="button-calculate" onclick="calculatePath()">
             <img
               src="https://cdn-icons-png.flaticon.com/128/9422/9422848.png"
@@ -277,13 +299,12 @@
                 margin-right: 5px;
               "
             />
-            경로 계산하기
+            전략 도출하기
           </button>
           <div class="loader-container hidden">
-            <div class="loader">
-              <div class="loader-bar"></div>
-            </div>
-            <!-- 로딩바 완료 메시지 -->
+            <div class="spinner hidden"></div>
+
+            <!-- // #32 로딩바 완료 메시지 -->
             <span id="completeLabel" class="hidden"
               >Complete! 파일 저장 완료</span
             >
@@ -308,8 +329,8 @@
       <!-- ============= //#30 [주문 관리] 페이지 - 여기부터 =============-->
       <div id="orderCheck" class="section">
         <div class="panel">
-          <h2>주문 데이터</h2>
-          <button class="button-check" onclick="loadOrderData()">
+          <h2>확정 주문 데이터</h2>
+          <button class="button-check" onclick="loadConfirmedOrderData()">
             <img
               src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
               alt="Load Icon"
@@ -324,7 +345,7 @@
             주문 정보 불러오기
           </button>
           <div class="table-container">
-            <table id="orderTable"></table>
+            <table id="confirmedOrderTable"></table>
           </div>
         </div>
         <div class="panel">
@@ -409,10 +430,10 @@
         disableButtons(); // 다른 버튼들 모두 비활성화
 
         const loaderContainer = document.querySelector(".loader-container");
-        const loaderBar = document.querySelector(".loader-bar");
+        const spinner = document.querySelector(".spinner");
         const completeLabel = document.getElementById("completeLabel");
-        loaderContainer.classList.remove("hidden");
-
+        loaderContainer.classList.remove("hidden"); // #32 로딩 박스 보이도록
+        spinner.classList.remove("hidden"); // #32 로딩 동그라미 돌아가는 모습 보이도록
         //#28 ======================= 수리모형 함수 넣기 -> 주석처리 여기부터
         // loaderBar.style.width = "0%";
         // let width = 0;
@@ -436,15 +457,14 @@
           .then((response) => response.json())
           .then((data) => {
             if (data.success) {
-              loaderBar.style.width = "100%"; // #28 로딩바 100% 채우기
-              completeLabel.classList.remove("hidden");
-              alert("경로 계산이 완료 + CSV 저장 완료");
+              // loaderBar.style.width = "100%"; // #28 로딩바 100% 채우기
+              alert("전략 도출 완료 + CSV 저장 완료");
 
               // 기존 코드 - 버튼 비활성화/ 활성화
-              loaderBar.className = "loader-bar complete"; // 경로 계산 마침 - 계속 초록색으로 로딩바 채워져 있도록 (Complete!)
+              // loaderBar.className = "loader-bar complete"; // 경로 계산 마침 - 계속 초록색으로 로딩바 채워져 있도록 (Complete!)
               completeLabel.classList.remove("hidden");
-              loaderContainer.classList.add("hidden");
-              enableButtons(); // 다른 버튼들 모두 활성화
+              // loaderContainer.classList.add("hidden"); // #32 로딩 동그라미 돌아가는 모습 안 보이도록
+              // enableButtons(); // 다른 버튼들 모두 활성화
             } else {
               alert("에러 발생: " + data.message);
             }
@@ -454,7 +474,9 @@
             console.log(error);
           })
           .finally(() => {
-            loaderContainer.classList.add("hidden");
+            loaderContainer.classList.add("hidden"); // #32 모두 완료되면, 로딩 동그라미 다시 숨기기
+            spinner.classList.add("hidden");
+            enableButtons(); // 다른 버튼들 모두 활성화
           });
       }
 
@@ -517,14 +539,7 @@
       //     });
       // }
 
-      //  ============= //#28 [전략 도출] 페이지 - 수리모형 코드 통합 - 여기까지 =============
-
-      //  ============= //#30 [주문 관리] 페이지 - 여기부터 =============
-      var orderMap;
-      var markers = []; // Global array to hold markers
-      var selectedMarker = null; // To keep track of the selected marker
-
-      // #30 latitude,longitude를 통해서 "도로명 주소"를 column으로 나타내기
+      // #32 [전략 도출] 페이지 - 좌측 표 생성
       function loadOrderData() {
         fetch("/static/orders.csv")
           .then((response) => response.text())
@@ -542,7 +557,88 @@
             const latIndex = headers.indexOf("latitude"); // 새로운 column 삭제
             const lonIndex = headers.indexOf("longitude"); // 새로운 column 삭제
             headers.push("도로명주소"); // 새로운 column 추가
+
+            // 테이블 생성
             const table = document.getElementById("orderTable");
+            table.innerHTML = ""; // 이전 데이터 Clear
+
+            // header 행 생성
+            const headerRow = document.createElement("tr");
+            headers.forEach((header) => {
+              const th = document.createElement("th");
+              th.textContent = header;
+              headerRow.appendChild(th);
+            });
+            table.appendChild(headerRow);
+
+            // 각 데이터 행 처리
+            const dataRows = rows.slice(1); // header에 해당하는 행은 제외하고~ 시작
+            Promise.all(
+              dataRows.map((row) => {
+                const latitude = row[latIndex];
+                const longitude = row[lonIndex];
+
+                console.log("Latitude:", latitude, "Longitude:", longitude); // #30 debug 목적 코드
+
+                return getAddress(latitude, longitude).then((address) => {
+                  row.push(address); // 도로명주소 데이터를 row 값에 추가
+                  return row;
+                });
+              })
+            ).then((processedRows) => {
+              // processedRows.forEach((row) => { // #30-2 주석처리 (row) -> (row, index)
+              processedRows.forEach((row, index) => {
+                const tr = document.createElement("tr");
+                row.forEach((cell) => {
+                  const td = document.createElement("td");
+                  td.textContent = cell;
+                  tr.appendChild(td);
+                });
+                // #30-2 테이블 클릭하면, 지도에 표시되도록
+                tr.onclick = () =>
+                  highlightClientData(
+                    index,
+                    parseFloat(row[latIndex]),
+                    parseFloat(row[lonIndex])
+                  );
+
+                table.appendChild(tr);
+              });
+            });
+          })
+          .catch((error) => {
+            alert("Error loading data: " + error);
+          });
+      }
+
+      //  ============= //#28 [전략 도출] 페이지 - 수리모형 코드 통합 - 여기까지 =============
+
+      //  ============= //#30 [주문 관리] 페이지 - 여기부터 =============
+      var orderMap;
+      var markers = []; // Global array to hold markers
+      var selectedMarker = null; // To keep track of the selected marker
+
+      // #30 latitude,longitude를 통해서 "도로명 주소"를 column으로 나타내기
+      function loadConfirmedOrderData() {
+        fetch("/static/orders.csv")
+          .then((response) => response.text())
+          .then((data) => {
+            // const rows = data.split("\n").map((row) => row.split(","));
+            // Filters out empty rows and checks for non-empty first cell
+            //#30 비어있는 행(empty rows)을 확인(=row에 2개 이상에 데이터가 있는지 확인) && 1번째 셀이 비어있는지 확인 - 비어있는 csv 파일을 보이도록 하지 않기 위해
+            const rows = data
+              .split("\n")
+              .map((row) => row.split(","))
+              .filter((row) => row.length > 1 && row[0]);
+
+            // #28 latitude,longitude 컬럼 제외하고 "도로명주소" 컬럼 추가
+            const headers = rows[0]; // headers가 1번째 행에 있다고 가정
+            const latIndex = headers.indexOf("latitude"); // 새로운 column 삭제
+            const lonIndex = headers.indexOf("longitude"); // 새로운 column 삭제
+            headers.push("도로명주소1"); // 새로운 column 추가
+
+            // 테이블 생성
+            const table = document.getElementById("confirmedOrderTable");
             table.innerHTML = ""; // 이전 데이터 Clear
 
             // header 행 생성
@@ -726,7 +822,7 @@
       function highlightClientData(index, lat, lon) {
         // ============ 테이블 하이라이트 ============
         // Reset any previously selected row
-        document.querySelectorAll("#orderTable tr").forEach((tr) => {
+        document.querySelectorAll("#confirmedOrderTable tr").forEach((tr) => {
           // tr.style.backgroundColor = ""; // Reset background color
           if (tr.style.backgroundColor != "green") {
             // Only reset rows that are not marked complete
@@ -736,7 +832,7 @@
 
         // Highlight the new selected row
         const selectedRow = document.querySelector(
-          `#orderTable tr:nth-child(${index + 2})`
+          `#confirmedOrderTable tr:nth-child(${index + 2})`
         ); // +2 because nth-child is 1-based and includes header
         if (selectedRow.style.backgroundColor != "green") {
           // Do not change color if already marked complete
@@ -797,7 +893,7 @@
       }
 
       function updateRowColor(clientId) {
-        var table = document.getElementById("orderTable");
+        var table = document.getElementById("confirmedOrderTable");
         var columnIndex = 0; // Assume client_id is the first column, adjust if necessary
         // Find the index for 'client_id' column
         var headers = table.rows[0].cells;
