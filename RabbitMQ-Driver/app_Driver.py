@@ -1,4 +1,4 @@
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, render_template, send_from_directory, abort
 import pandas as pd
 
 app = Flask(__name__)
@@ -7,7 +7,31 @@ app = Flask(__name__)
 @app.route('/deliveries')
 def deliveries():
     # CSV 파일 경로가 정확하고 서버 관점에서 액세스 가능한지 확인하도록!
-    return send_from_directory('C:/GitStudy/Python_Team_eVe/RabbitMQ-Driver/static', 'deliveries.csv')
+    return send_from_directory('C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/static', 'deliveries.csv')
+
+# //#33 Driver 여러 명 페이지
+def load_deliveries():
+    return pd.read_csv("C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/static/deliveries.csv")
+
+# //#33 Driver 여러 명 페이지
+@app.route('/driver/<int:driver_id>')
+def client_page(driver_id):    
+    #33 URL에 포함된 driver_id가 csv파일(deliveries.csv)에 존재하는지 확인
+    deliveries = load_deliveries()
+
+
+    # #33 'render_template' 함수를 사용해 html 파일 렌더링 & 
+    # # 'driver_id'를 HTML 파일로 전달하여, 페이지에서 사용할 수 있도록 함. 
+
+    # delivery_info = deliveries[(deliveries['driver_id'] == driver_id) & (deliveries['delivery_type'] == '수거')]
+
+    # # 'driver_id'를 바탕으로 deliveries.csv 파일에 있는 고객인지 확인 후 코드 실행
+
+    if driver_id in deliveries['driver_id'].values:
+        return render_template('screen_Driver.html', driverId = driver_id)
+    else:
+        abort(404)  # 존재하지 않는 client_id의 경우 404 에러 페이지를 반환
+
 
 @app.route('/')
 def index():

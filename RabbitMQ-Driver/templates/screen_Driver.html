@@ -14,6 +14,7 @@
 #23 Driver의 실시간 위치를 RabbitMQ로 송신 및 지도로 표시
 #26 관리자 페이지에서 deliveries.csv 관리하기 위해 구조 변경 - 절대적인 경로에서 (deliveries.csv) 파일 가져올 수 있도록 구조 변경(app_Driver.py)
 
+#33 Driver의 수만큼 다른 웹페이지 실행되도록 & driver_id에 따라 다른 RabbitMQ 주소를 부여받고, 각각 다른 주소로 데이터를 송신하도록
 
 -->
 <!DOCTYPE html>
@@ -188,6 +189,9 @@
         var currentIndex = 0; // #17-5 현재 데이터 순서를 확인하기 위한 변수
         var marker; //#23 최신 위치에 해당하는 marker가 지도에 1개만 표시되도록
 
+        var driverId = "{{ driverId }}"; //#33 Jinja2 템플릿 구문을 사용하여 변수 값을 직접 받아오기.
+        console.log("//#22 Flask로부터 전달받은 driverId 값: " + driverId);
+
         // 배달 유형 표시 문구
         var deliveryType = document.getElementById("delivery-type");
         // 위치 데이터 표시 문구    // #17-4 주석처리
@@ -273,7 +277,7 @@
         }
 
         //#23 Driver의 실시간 위치를 RabbitMQ로 송신 및 지도로 표시
-        function sendPosToRabbitMQ(lat, lng) {
+        function sendPosToClientRabbitMQ(lat, lng) {
           var locationData = JSON.stringify({ latitude: lat, longitude: lng });
           if (stompClient.connected) {
             stompClient.send("/topic/locationUpdate", {}, locationData);
@@ -286,6 +290,33 @@
             setTimeout(function () {
               if (stompClient.connected) {
                 stompClient.send("/topic/locationUpdate", {}, locationData);
+                console.log(
+                  "Sent location data to RabbitMQ after reconnecting:",
+                  locationData
+                );
+              } else {
+                console.log("Failed to reconnect WebSocket.");
+              }
+            }, 5000);
+          }
+        }
+
+        // #33 관리자 페이지로 각 Driver의 위치 데이터 보낼 목적 - RabbitMQ 데이터 송수신
+        function sendPosToAdministratorRabbitMQ(lat, lng) {
+          var locationData = JSON.stringify({ latitude: lat, longitude: lng });
+          var publishTopic = "/topic/driverLocation" + driverId;
+          if (stompClient.connected) {
+            stompClient.send(publishTopic, {}, locationData);
+            console.log("Sent location data to RabbitMQ:", locationData);
+            console.log("//#33 publishTopic: " + publishTopic);
+          } else {
+            console.log(
+              "WebSocker이 연결되어 있지 않음. Attempting to reconnect..."
+            );
+            connectToRabbitMQ();
+            setTimeout(function () {
+              if (stompClient.connected) {
+                stompClient.send(publishTopic, {}, locationData);
                 console.log(
                   "Sent location data to RabbitMQ after reconnecting:",
                   locationData
@@ -319,7 +350,12 @@
 
             map.setCenter(userLocation);
             console.log("얻은 위치 데이터: ", userLocation);
-            sendPosToRabbitMQ(
+            sendPosToClientRabbitMQ(
+              position.coords.latitude,
+              position.coords.longitude
+            );
+            // #33
+            sendPosToAdministratorRabbitMQ(
               position.coords.latitude,
               position.coords.longitude
             );

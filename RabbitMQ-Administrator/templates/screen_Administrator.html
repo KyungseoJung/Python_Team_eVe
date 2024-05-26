@@ -12,6 +12,7 @@
 
 //#31 디자인
 //#32 [전략 도출] 페이지 - 테이블 생성 및 표시 & 로딩바 표시
+//#33 Driver의 수만큼 다른 웹페이지 실행되도록 & driver_id에 따라 다른 RabbitMQ 주소를 부여받고, 각각 다른 주소로 데이터를 송신하도록
 
 -->
 
@@ -31,6 +32,9 @@
     <!-- #30-3 RabbitMQ로부터 데이터를 수신해서 표에 표시 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <!-- <script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script> -->
+
+    <!-- //#33 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 
     <style>
       /* //#27
@@ -372,7 +376,11 @@
 
       <!-- ============= //[배달 관리] 페이지 - 여기부터 =============-->
       <div id="delivery" class="section">
-        <h2>구현 예정입니다~2</h2>
+        <h2>Driver Locations</h2>
+        <!-- #33 -->
+        <div id="driverLocations">
+          <!-- Driver locations will be dynamically inserted here -->
+        </div>
       </div>
       <!-- ============= //[배달 관리] 페이지 - 여기까지 =============-->
 
@@ -617,6 +625,7 @@
       var orderMap;
       var markers = []; // Global array to hold markers
       var selectedMarker = null; // To keep track of the selected marker
+      var stompClient; // #30-2 미리 선언
 
       // #30 latitude,longitude를 통해서 "도로명 주소"를 column으로 나타내기
       function loadConfirmedOrderData() {
@@ -871,25 +880,31 @@
       // #30-3 RabbitMQ 통신
       function connectToRabbitMQ() {
         var ws = new WebSocket("ws://127.0.0.1:15674/ws");
-        var stompClient = Stomp.over(ws);
+        stompClient = Stomp.over(ws);
         stompClient.connect(
           "guest",
           "guest",
           function (frame) {
             console.log("//#30-3 Connected: " + frame);
-            // Subscribe to a pattern if possible, or a general topic that gets all messages
-            var subscirbeTopic = "/topic/serviceComplete";
-            //RabbitMQ 데이터 수신받는 경로 - "수거완료"(즉, 서비스 완료)된 데이터에 대해서 고객 ID를 데이터로 받기
 
-            stompClient.subscribe(subscirbeTopic, function (message) {
-              console.log("//#30-3 데이터 수신 - 고객 ID: " + message.body);
-              updateRowColor(message.body);
-            });
+            subscribeCompleteTopics(); // #33 함수로 분리화
+
+            subscribeDriverTopics(); // #33 Driver들의 실시간 위치 얻기
           },
           function (error) {
             console.log("WebSocket error: " + error);
           }
         );
+      }
+
+      function subscribeCompleteTopics() {
+        // Subscribe to a pattern if possible, or a general topic that gets all messages
+        var subscribeTopic = "/topic/serviceComplete";
+
+        stompClient.subscribe(subscribeTopic, function (message) {
+          console.log("//#30-3 데이터 수신 - 고객 ID: " + message.body);
+          updateRowColor(message.body);
+        });
       }
 
       function updateRowColor(clientId) {
@@ -914,9 +929,59 @@
       }
 
       // connectToRabbitMQ() 함수를 통해 RabbitMQ 통신 시작
-      connectToRabbitMQ();
+      // connectToRabbitMQ(); // #33 - 밑에서 fetchDrivers 완료 후, 따로 실행
 
       //  ============= //#30 [주문 관리] 페이지 - 여기까지 =============
+
+      //  ============= //#33 [배달 관리] 페이지 - 여기부터 =============
+      var drivers = [];
+      // #33 Driver들의 위치 얻기
+      function subscribeDriverTopics() {
+        // console.log("//#33 drivers 배열: " + drivers);
+
+        drivers.forEach((driverId) => {
+          // console.log("//#33 driver forEach로 살피기: " + driverId);
+          var subscribeDriverTopic = "/topic/driverLocation" + driverId;
+          stompClient.subscribe(subscribeDriverTopic, function (message) {
+            // updateDriverLocation(driverId, message.body);
+            console.log(
+              "//#33 배달 ID: " + driverId + ", 메시지: " + message.body
+            );
+          });
+        });
+      }
+
+      function fetchDrivers() {
+        fetch("/static/deliveries.csv")
+          .then((response) => response.text())
+          .then((csvText) => {
+            var data = Papa.parse(csvText, { header: true }).data;
+            var driverIds = new Set(); // driver_id의 고유값(즉, 종류)을 저장하기 위한 Set 설정
+            data.forEach((row) => driverIds.add(row.driver_id));
+            drivers = Array.from(driverIds); // driver_id의 고유값을 배열(Array)로 넣기
+            console.log(
+              "//#33 driver_id 고유값들을 배열(drivers)로 완성" + drivers
+            );
+
+            connectToRabbitMQ(); // driver_id의 값을 모두 얻은 후에는 RabbitMQ 연결하고 & Subsribe
+          })
+          .catch((err) => console.error("Error loading CSV data:", err));
+      }
+
+      function updateDriverLocation(driverId, location) {
+        var locationDiv = document.getElementById("driverLocations");
+        var existingEntry = document.getElementById("location-" + driverId);
+        if (!existingEntry) {
+          existingEntry = document.createElement("div");
+          existingEntry.id = "location-" + driverId;
+          locationDiv.appendChild(existingEntry);
+        }
+        existingEntry.textContent = "Driver " + driverId + ": " + location;
+      }
+
+      fetchDrivers(); // CSV 파일로부터 driverID 받아오기(fetching) 시작
+
+      //  ============= //#33 [배달 관리] 페이지 - 여기까지 =============
 
       //  ============= //#29 [배터리 관리] 페이지 =============
       //  ============= //배터리 강화학습 코드 통합 - 여기부터=============
