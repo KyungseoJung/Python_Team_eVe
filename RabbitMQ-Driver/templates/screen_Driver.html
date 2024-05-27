@@ -16,6 +16,8 @@
 
 #33 Driver의 수만큼 다른 웹페이지 실행되도록 & driver_id에 따라 다른 RabbitMQ 주소를 부여받고, 각각 다른 주소로 데이터를 송신하도록
 
+#33-2 드라이버 정보 표로 표시(driver_id, 상태, 다음 도착지)
+
 -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -247,7 +249,8 @@
         }
 
         //#19 버튼을 누르면, RabbitMQ로 메시지 송신
-        function sendStateToRabbitMQ(message) {
+        //#33-2 나중에 관리자 페이지로 보내는 RabbitMQ 코드는 endStateToAdminRabbitMQ함수로 옮길 필요 있음
+        function sendStateToClientRabbitMQ(message) {
           // #21 Driver에서 각각 다른 주소로 메시지 송신 (deliveries.csv의 client_id를 기반으로)
           var clientId = deliveries[currentIndex].client_id; // 현재 배달의 고객 ID를 가져옵니다.
           var topic = "/topic/serviceState" + clientId; // 고객 ID에 따라 토픽을 동적으로 결정합니다.
@@ -269,6 +272,60 @@
                 if (message == "수거완료") {
                   stompClient.send(completeTopic, {}, clientId); // #30-3
                 }
+              } else {
+                console.log("Failed to reconnect to RabbitMQ.");
+              }
+            }, 5000);
+          }
+        }
+
+        //#33-2 관리자 RabbitMQ로 메시지 송신할 데이터 준비 - 도로명 주소
+        function ReadyToSendStateToAdminRabbitMQ(
+          driverId,
+          message,
+          latitude,
+          longitude
+        ) {
+          // ===================================
+          if (currentIndex >= deliveries.length - 1) {
+            // 모든 업무 완료
+            sendStateToAdminRabbitMQ(driverId, "업무 완료", 0, 0);
+          } else {
+            // 위치 데이터 보내기
+            sendStateToAdminRabbitMQ(driverId, message, latitude, longitude);
+          }
+        }
+
+        //#33-2 관리자 RabbitMQ로 메시지 송신
+        function sendStateToAdminRabbitMQ(
+          driverId,
+          status,
+          latitude,
+          longitude
+        ) {
+          var driverStateMessage = JSON.stringify({
+            driverId: driverId,
+            status: status,
+            latitude: latitude,
+            longitude: longitude,
+          });
+
+          var adminStateTopic = "/topic/driverStatus"; // #33-2 배달기사의 상태를 Administrator.html 로 전송해보자
+
+          if (stompClient && stompClient.connected) {
+            stompClient.send(adminStateTopic, {}, driverStateMessage);
+            console.log(
+              "//#33-2 Driver의 ID, 상태, 다음 도착지 보냄: ",
+              driverStateMessage
+            );
+          } else {
+            console.log(
+              "//#33-2 Not connected to RabbitMQ. Attempting to reconnect..."
+            );
+            connectToRabbitMQ();
+            setTimeout(function () {
+              if (stompClient.connected) {
+                stompClient.send(adminStateTopic, {}, driverStateMessage);
               } else {
                 console.log("Failed to reconnect to RabbitMQ.");
               }
@@ -395,6 +452,8 @@
               var address = response.addressInfo.fullAddress;
               arrivalAddressDisplay.innerText = address;
               //   console.log("//#17-4 도로명 주소로 변환 및 표시");
+
+              // #33-2 여기서 RabbitMQ 송신할까?
             } else {
               console.error("Failed to fetch address");
             }
@@ -458,25 +517,41 @@
             zoom: 16,
           });
           // connectToRabbitMQ(); // -> script 마지막 부분에 실행함
-          setInterval(getDriverPos, 3000); // Get User Position every 3 seconds
+          setInterval(getDriverPos, 10000); // Get User Position every 10 seconds // 10초에 한번씩 위치 받기
         }
 
         // [배달 완료] 및 [수거 완료] 버튼에 이벤트 리스너 추가
         deliveryCompleteBtn.addEventListener("click", function () {
-          sendStateToRabbitMQ("배달완료"); // #19 버튼을 누르면, RabbitMQ로 메시지 송신
+          sendStateToClientRabbitMQ("배달완료"); // #19 버튼을 누르면, RabbitMQ로 메시지 송신
 
           if (currentIndex < deliveries.length - 1) {
             currentIndex++; // 다음 데이터 (delivery_type, 위치 데이터) 표시
             updateDeliveryInfo();
+
+            // #33-2 관리자 페이지 RabbitMQ로 메시지 송신
+            ReadyToSendStateToAdminRabbitMQ(
+              driverId,
+              "배달완료",
+              deliveries[currentIndex].latitude,
+              deliveries[currentIndex].longitude
+            );
           }
         });
 
         pickupCompleteBtn.addEventListener("click", function () {
-          sendStateToRabbitMQ("수거완료"); // #19 버튼을 누르면, RabbitMQ로 메시지 송신
+          sendStateToClientRabbitMQ("수거완료"); // #19 버튼을 누르면, RabbitMQ로 메시지 송신
 
           if (currentIndex < deliveries.length - 1) {
             currentIndex++; // 다음 데이터 (delivery_type, 위치 데이터) 표시
             updateDeliveryInfo();
+
+            // #33-2 관리자 페이지 RabbitMQ로 메시지 송신
+            ReadyToSendStateToAdminRabbitMQ(
+              driverId,
+              "수거완료",
+              deliveries[currentIndex].latitude,
+              deliveries[currentIndex].longitude
+            );
           }
         });
 

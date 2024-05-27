@@ -14,6 +14,8 @@
 //#32 [전략 도출] 페이지 - 테이블 생성 및 표시 & 로딩바 표시
 //#33 Driver의 수만큼 다른 웹페이지 실행되도록 & driver_id에 따라 다른 RabbitMQ 주소를 부여받고, 각각 다른 주소로 데이터를 송신하도록
 //#33-1 지도에 표시
+//#33-2 드라이버 정보 표로 표시(driver_id, 상태, 다음 도착지)
+
 -->
 
 <!DOCTYPE html>
@@ -97,15 +99,6 @@
         font-size: 20px; /* Larger font size */
         border-radius: 5px; /* Rounded corners */
       }
-      .button-save {
-        color: white;
-        background: #000000; /* Dark grey background */
-        border: 1.5px solid #000000;
-        padding: 10px 30px; /* Larger buttons */
-        cursor: pointer;
-        font-size: 20px; /* Larger font size */
-        border-radius: 5px; /* Rounded corners */
-      }
       #content {
         /* //#27 불필요한 공백 제거 */
         margin-top: 0;
@@ -113,13 +106,38 @@
 
         padding: 20px;
         display: flex;
-        justify-content: space-around;
+        /* //#33-2 추가 */
+        flex-direction: column; /* Stack vertically */
+        justify-content: space-between; /* Distribute space */
+        align-items: stretch; /* Align items to stretch full width */
+
+        width: 100%; /* Ensures the container takes full width */
+        /* max-width: 1200px;  */
+        /* Adjust this value based on your design requirements */
+        margin: 0 auto; /* Centers the content block horizontally */
+
+        /* justify-content: space-around; */
+      }
+      /* //#33-2 */
+      .top-panels {
+        display: flex;
+        justify-content: space-between; /* Aligns children side by side*/
+        width: 100%; /* Ensures the container takes full width */
+      }
+      /* //#33-2 각 panel들이 다른 크기를 갖고 있어야 한다면, 이 부분 설정해야 함 */
+      .top-panels .panel {
+        width: 48%;
+        /* Adjust based on margin or padding between panels */
       }
       .panel {
+        flex: 1; /* //#33-2 각 panel이 동일한 범위를 차지하도록 */
         border: 1px solid #ccc;
         padding: 10px;
-        margin: 20px;
-        width: 48%;
+        margin: 20px; /* 간격을 위해 margin 설정 */
+      }
+      .panel:nth-child(3) {
+        /* //#33-2 Specifically target the third panel */
+        width: 100%;
       }
       .section {
         display: none;
@@ -284,7 +302,7 @@
               "
             />
 
-            Load CSV Data
+            실시간 주문 데이터
           </button>
           <div class="table-container">
             <table id="orderTable"></table>
@@ -313,19 +331,6 @@
               >Complete! 파일 저장 완료</span
             >
           </div>
-          <button class="button-save" onclick="saveFile()">
-            <img
-              src="https://cdn-icons-png.flaticon.com/128/2480/2480719.png"
-              alt="Load Icon"
-              style="
-                height: 30px;
-                width: 30px;
-                vertical-align: middle;
-                margin-right: 5px;
-              "
-            />
-            파일 저장
-          </button>
         </div>
       </div>
       <!-- ============= //#28 [전략 도출] 페이지 - 수리모형 코드 통합 - 여기까지 =============-->
@@ -346,7 +351,7 @@
               "
             />
 
-            주문 정보 불러오기
+            확정 주문 데이터
           </button>
           <div class="table-container">
             <table id="confirmedOrderTable"></table>
@@ -356,7 +361,7 @@
           <h2>주문 Map</h2>
           <button class="button-check" onclick="initOrderMap()">
             <img
-              src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
+              src="https://cdn-icons-png.flaticon.com/128/854/854878.png"
               alt="Load Icon"
               style="
                 height: 30px;
@@ -376,27 +381,57 @@
 
       <!-- ============= //[배달 관리] 페이지 - 여기부터 =============-->
       <div id="delivery" class="section">
-        <h2>Driver Locations</h2>
-        <!-- #33 -->
-        <!-- initOrderMap, orderMapDiv, 변수(orderMap) 데이터를 Driver로 바꾸기 -->
-        <div class="panel">
-          <h2>Driver Map</h2>
-          <button class="button-check" onclick="initDriverMap()">
-            <img
-              src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
-              alt="Load Icon"
-              style="
-                height: 30px;
-                width: 30px;
-                vertical-align: middle;
-                margin-right: 5px;
-              "
-            />
+        <!-- //#33-2 화면 구획화 -->
+        <div id="content">
+          <div class="top-panels">
+            <!-- Panel1 //#33-2 Driver 정보를 표로 표시 -->
+            <div class="panel">
+              <h2>Driver Table</h2>
+              <div class="table-container">
+                <table id="driverStatusTable"></table>
+              </div>
+            </div>
+            <!-- Panel2 #33 -->
+            <!-- initOrderMap, orderMapDiv, 변수(orderMap) 데이터를 Driver로 바꾸기 -->
+            <div class="panel">
+              <h2>Driver Map</h2>
+              <button class="button-check" onclick="initDriverMap()">
+                <img
+                  src="https://cdn-icons-png.flaticon.com/128/854/854878.png"
+                  alt="Load Icon"
+                  style="
+                    height: 30px;
+                    width: 30px;
+                    vertical-align: middle;
+                    margin-right: 5px;
+                  "
+                />
 
-            Driver Map 불러오기
-          </button>
+                Driver Map 불러오기
+              </button>
 
-          <div id="driverMapDiv" style="width: 100%; height: 400px"></div>
+              <div id="driverMapDiv" style="width: 100%; height: 400px"></div>
+            </div>
+          </div>
+
+          <!-- Panel3 -->
+          <div class="panel">
+            <h2>Driver Work Process</h2>
+            <button class="button-check" onclick="initDriverMap()">
+              <img
+                src="https://cdn-icons-png.flaticon.com/128/265/265707.png"
+                alt="Load Icon"
+                style="
+                  height: 30px;
+                  width: 30px;
+                  vertical-align: middle;
+                  margin-right: 5px;
+                "
+              />
+
+              Driver Work Process 불러오기
+            </button>
+          </div>
         </div>
       </div>
       <!-- ============= //[배달 관리] 페이지 - 여기까지 =============-->
@@ -433,9 +468,6 @@
       // document.querySelectorAll(".button-check").forEach((btn) => {
       //   btn.classList.add("disabled");
       // });
-      document.querySelectorAll(".button-save").forEach((btn) => {
-        btn.classList.add("disabled");
-      });
 
       function showSection(section) {
         document.querySelectorAll(".section").forEach((sec) => {
@@ -516,10 +548,6 @@
         document.querySelectorAll(".button-calculate").forEach((btn) => {
           btn.classList.add("disabled");
         });
-        //#27 이미 비활성화 되어있음
-        // document.querySelectorAll(".button-save").forEach((btn) => {
-        //   btn.classList.add("disabled");
-        // });
       }
 
       function enableButtons() {
@@ -533,9 +561,6 @@
         // document.querySelectorAll(".button-calculate").forEach((btn) => {
         //   btn.classList.remove("disabled");
         // });
-        document.querySelectorAll(".button-save").forEach((btn) => {
-          btn.classList.remove("disabled");
-        });
       }
 
       function saveFile() {
@@ -866,6 +891,10 @@
         }
 
         // ============ 지도 하이라이트 ============
+        // 지도가 초기화되지 않았다면, initOrderMap 함수를 호출
+        if (!orderMap) {
+          initOrderMap();
+        }
         // 새로운 선택을 한 마커 외의 다른 마커들은 원상태로 (Reset the icon of the previously selected marker)
         if (selectedMarker) {
           selectedMarker.setMap(null); // Remove the old marker
@@ -904,9 +933,11 @@
           function (frame) {
             console.log("//#30-3 Connected: " + frame);
 
-            subscribeCompleteTopics(); // #33 함수로 분리화
+            subscribeCompleteTopics(); // #33 함수로 분리화 - 서비스완료(즉, "수거완료") 받았는지 확인
 
             subscribeDriverTopics(); // #33 Driver들의 실시간 위치 얻기
+
+            subscribeDriverStateTopics(); // #33-2 RabbitMQ로부터 Driver들의 서비스 상태를 얻기
           },
           function (error) {
             console.log("WebSocket error: " + error);
@@ -994,6 +1025,93 @@
             connectToRabbitMQ(); // driver_id의 값을 모두 얻은 후에는 RabbitMQ 연결하고 & Subsribe
           })
           .catch((err) => console.error("Error loading CSV data:", err));
+      }
+
+      // #33-2 RabbitMQ로부터 Driver들의 서비스 상태를 얻기
+      function subscribeDriverStateTopics() {
+        // Subscribe to a pattern if possible, or a general topic that gets all messages
+        var subscribeDriverStateTopic = "/topic/driverStatus";
+
+        stompClient.subscribe(subscribeDriverStateTopic, function (message) {
+          var driverStateData = JSON.parse(message.body);
+          console.log("//#33-2 데이터 수신: " + driverStateData);
+          console.log("//#33-2 드라이버 ID: " + driverStateData.driverId);
+          console.log("//#33-2 드라이버 상태: " + driverStateData.status);
+          console.log(
+            "//#33-2 드라이버 다음 도착지 위도: " + driverStateData.latitude
+          );
+          console.log(
+            "//#33-2 드라이버 다음 도착지 경도: " + driverStateData.longitude
+          );
+
+          updateDriverTable(driverStateData); // #33-2 드라이버 데이터들을 표로 나타내기
+        });
+      }
+
+      // #33-2 드라이버들의 데이터를 표로 표시
+      function updateDriverTable(data) {
+        var table = document.getElementById("driverStatusTable"); // Ensure you have a table with this ID in your HTML
+        if (!table) {
+          console.error("Table element not found.");
+          return;
+        }
+
+        // 테이블 표의 header가 존재하지 않는다면, 생성
+        if (table.rows.length === 0) {
+          let header = table.createTHead();
+          let headerRow = header.insertRow(0);
+          ["Driver ID", "State", "다음 도착지"].forEach((headerText) => {
+            let th = document.createElement("th");
+            th.innerText = headerText;
+            headerRow.appendChild(th);
+          });
+        }
+
+        // #33-2 Retrieve the address using the latitude and longitude
+        getAddress(data.latitude, data.longitude)
+          .then((address) => {
+            // Assuming data contains properties `driverId`, `status`, and `nextDestination`
+            var row = document.querySelector(`#driver-${data.driverId}`);
+            if (!row) {
+              row = table.insertRow(-1);
+              row.id = `driver-${data.driverId}`;
+              row.insertCell(0).innerText = data.driverId; // Driver ID
+              row.insertCell(1).innerText = data.status; // State
+              row.insertCell(2).innerText = address; // Address
+              // row.insertCell(3).innerText = data.longitude; // Longitude
+              // row.insertCell(4).innerText = data.latitude; // Latitude
+            } else {
+              // Update the existing row
+              row.cells[1].innerText = data.status;
+              row.cells[2].innerText = address;
+              // row.cells[3].innerText = data.longitude;
+              // row.cells[4].innerText = data.latitude;
+            }
+          })
+          .catch((error) => {
+            console.error("Failed to fetch address: " + error);
+          });
+      }
+      function getAddress(latitude, longitude) {
+        return new Promise((resolve, reject) => {
+          var xhr = new XMLHttpRequest();
+          xhr.open(
+            "GET",
+            `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${latitude}&lon=${longitude}&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu`
+          );
+          xhr.onload = function () {
+            if (xhr.status === 200) {
+              var response = JSON.parse(xhr.responseText);
+              resolve(response.addressInfo.fullAddress); // Returning the full address
+            } else {
+              reject("Failed to fetch address");
+            }
+          };
+          xhr.onerror = function () {
+            reject("Network request failed");
+          };
+          xhr.send();
+        });
       }
 
       // function updateDriverLocation(driverId, location) {
