@@ -13,7 +13,7 @@
 //#31 디자인
 //#32 [전략 도출] 페이지 - 테이블 생성 및 표시 & 로딩바 표시
 //#33 Driver의 수만큼 다른 웹페이지 실행되도록 & driver_id에 따라 다른 RabbitMQ 주소를 부여받고, 각각 다른 주소로 데이터를 송신하도록
-
+//#33-1 지도에 표시
 -->
 
 <!DOCTYPE html>
@@ -378,8 +378,25 @@
       <div id="delivery" class="section">
         <h2>Driver Locations</h2>
         <!-- #33 -->
-        <div id="driverLocations">
-          <!-- Driver locations will be dynamically inserted here -->
+        <!-- initOrderMap, orderMapDiv, 변수(orderMap) 데이터를 Driver로 바꾸기 -->
+        <div class="panel">
+          <h2>Driver Map</h2>
+          <button class="button-check" onclick="initDriverMap()">
+            <img
+              src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
+              alt="Load Icon"
+              style="
+                height: 30px;
+                width: 30px;
+                vertical-align: middle;
+                margin-right: 5px;
+              "
+            />
+
+            Driver Map 불러오기
+          </button>
+
+          <div id="driverMapDiv" style="width: 100%; height: 400px"></div>
         </div>
       </div>
       <!-- ============= //[배달 관리] 페이지 - 여기까지 =============-->
@@ -743,8 +760,8 @@
             const latIndex = headers.indexOf("latitude");
             const lonIndex = headers.indexOf("longitude");
             // 지도에 툴팁으로 고객 정보 표시하기 위함
-            const clientIndex = headers.indexOf("client_id");
-            const chargeAmountIndex = headers.indexOf("charge_amount");
+            // const clientIndex = headers.indexOf("client_id");
+            // const chargeAmountIndex = headers.indexOf("charge_amount");
 
             let latSum = 0,
               lonSum = 0,
@@ -784,9 +801,9 @@
               loadMarkers(
                 rows,
                 latIndex,
-                lonIndex,
-                clientIndex,
-                chargeAmountIndex
+                lonIndex
+                // clientIndex,
+                // chargeAmountIndex
               );
             }
           })
@@ -803,9 +820,9 @@
       function loadMarkers(
         rows,
         latIndex,
-        lonIndex,
-        clientIndex,
-        chargeAmountIndex
+        lonIndex
+        // clientIndex,
+        // chargeAmountIndex
       ) {
         rows.slice(1).forEach((row) => {
           // 지도에 마커 표시하기 위함
@@ -934,7 +951,10 @@
       //  ============= //#30 [주문 관리] 페이지 - 여기까지 =============
 
       //  ============= //#33 [배달 관리] 페이지 - 여기부터 =============
-      var drivers = [];
+      var drivers = []; // #33 driverId 고유값들로만 이루어진 배열(Array)
+      var driverMap; // #33-1 배달기사들의 위치를 지도에 표시
+      var driverMarkers = {}; // #33-1 배달기사들의 위치를 마커로 표시
+
       // #33 Driver들의 위치 얻기
       function subscribeDriverTopics() {
         // console.log("//#33 drivers 배열: " + drivers);
@@ -946,6 +966,14 @@
             // updateDriverLocation(driverId, message.body);
             console.log(
               "//#33 배달 ID: " + driverId + ", 메시지: " + message.body
+            );
+            var driverLocation = JSON.parse(message.body);
+
+            // #33-1 배달 기사들의 위치를 지도에 표시
+            updateDriverMap(
+              driverLocation.latitude,
+              driverLocation.longitude,
+              driverId
             );
           });
         });
@@ -968,18 +996,93 @@
           .catch((err) => console.error("Error loading CSV data:", err));
       }
 
-      function updateDriverLocation(driverId, location) {
-        var locationDiv = document.getElementById("driverLocations");
-        var existingEntry = document.getElementById("location-" + driverId);
-        if (!existingEntry) {
-          existingEntry = document.createElement("div");
-          existingEntry.id = "location-" + driverId;
-          locationDiv.appendChild(existingEntry);
-        }
-        existingEntry.textContent = "Driver " + driverId + ": " + location;
-      }
+      // function updateDriverLocation(driverId, location) {
+      //   var locationDiv = document.getElementById("driverLocations");
+      //   var existingEntry = document.getElementById("location-" + driverId);
+      //   if (!existingEntry) {
+      //     existingEntry = document.createElement("div");
+      //     existingEntry.id = "location-" + driverId;
+      //     locationDiv.appendChild(existingEntry);
+      //   }
+      //   existingEntry.textContent = "Driver " + driverId + ": " + location;
+      // }
 
       fetchDrivers(); // CSV 파일로부터 driverID 받아오기(fetching) 시작
+
+      // #33-1 지도 첫 시작 - 들어온 주문들의 중심 위치로 시작
+      function initDriverMap() {
+        fetch("/static/orders.csv")
+          .then((response) => response.text())
+          .then((data) => {
+            const rows = data.split("\n").map((row) => row.split(","));
+            if (rows.length < 2) return; // Ensure there is data
+
+            // 지도에 마커 표시하기 위함
+            const headers = rows[0];
+            const latIndex = headers.indexOf("latitude");
+            const lonIndex = headers.indexOf("longitude");
+
+            let latSum = 0,
+              lonSum = 0,
+              validCount = 0;
+
+            rows.slice(1).forEach((row) => {
+              // 지도에 마커 표시하기 위함
+              const latitude = parseFloat(row[latIndex]);
+              const longitude = parseFloat(row[lonIndex]);
+
+              if (!isNaN(latitude) && !isNaN(longitude)) {
+                latSum += latitude;
+                lonSum += longitude;
+                validCount++;
+              }
+            });
+
+            if (validCount > 0) {
+              const centerLat = latSum / validCount;
+              const centerLon = lonSum / validCount;
+
+              //이미 지도 활성화 되었다면, just reset the center and clear old markers
+              if (driverMap) {
+                driverMap.setCenter(new Tmapv3.LatLng(centerLat, centerLon));
+                clearMarkers(); // 이미 markers가 존재한다면, Clear
+              } else {
+                // (첫 활성화) 지도 활성화 - Initialize the map for the first time
+                driverMap = new Tmapv3.Map("driverMapDiv", {
+                  center: new Tmapv3.LatLng(centerLat, centerLon),
+                  width: "100%",
+                  height: "400px",
+                  zoom: 12,
+                });
+              }
+            }
+          })
+          .catch((error) => console.error("Error loading CSV data:", error));
+      }
+
+      // #33-1 Driver 위치 표시
+      function updateDriverMap(latitude, longitude, driverId) {
+        console.log("//#33-1 마커 표시할 드라이버 아이디: " + driverId);
+        // 이미 해당 driverId의 마커가 존재한다면 지우기
+        if (driverMarkers[driverId]) {
+          driverMarkers[driverId].setMap(null);
+          console.log("//#33-1 드라이버" + driverId + "에 대해서 마커 삭제");
+        }
+
+        var driverLocation = new Tmapv3.LatLng(latitude, longitude);
+        console.log(
+          "//#33-1 드라이버" + driverId + "의 위치를 지도에 마커로 표시"
+        );
+        var newDriverMarker = new Tmapv3.Marker({
+          icon: "https://cdn-icons-png.flaticon.com/128/14975/14975104.png",
+          label: "Driver" + driverId, // #33-1 driverId를 바탕으로 배달 기사들 표시
+          position: driverLocation,
+          map: driverMap,
+        });
+
+        // Update the marker in the global object
+        driverMarkers[driverId] = newDriverMarker;
+      }
 
       //  ============= //#33 [배달 관리] 페이지 - 여기까지 =============
 

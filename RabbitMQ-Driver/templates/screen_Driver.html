@@ -355,10 +355,27 @@
               position.coords.longitude
             );
             // #33
-            sendPosToAdministratorRabbitMQ(
-              position.coords.latitude,
-              position.coords.longitude
-            );
+            // #33-1 임의로 Driver마다 다른 위치를 보내기 위함
+            if (driverId == 1) {
+              sendPosToAdministratorRabbitMQ(
+                position.coords.latitude,
+                position.coords.longitude
+              );
+            }
+            if (driverId == 2) {
+              console.log("//#33-1 ");
+              sendPosToAdministratorRabbitMQ(
+                position.coords.latitude + 0.01,
+                position.coords.longitude
+              );
+            }
+            if (driverId == 3) {
+              console.log("//#33-1 ");
+              sendPosToAdministratorRabbitMQ(
+                position.coords.latitude,
+                position.coords.longitude + 0.01
+              );
+            }
           });
         }
 
