@@ -15,7 +15,7 @@
 //#33 Driver의 수만큼 다른 웹페이지 실행되도록 & driver_id에 따라 다른 RabbitMQ 주소를 부여받고, 각각 다른 주소로 데이터를 송신하도록
 //#33-1 지도에 표시
 //#33-2 드라이버 정보 표로 표시(driver_id, 상태, 다음 도착지)
-
+//#33-3 드라이버 업무 진척도를 [수평 진행률 표시줄]을 통해 표현
 -->
 
 <!DOCTYPE html>
@@ -260,6 +260,53 @@
 
       /* ============= //#30 [주문 관리] 페이지 - 여기까지 ============= */
 
+      /* ============= //#33 [배달 관리] 페이지 - 여기부터 ============= */
+      #driverWorkProcess {
+        width: 100%;
+        padding: 10px;
+        background-color: #f4f4f4;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin: 20px 0;
+      }
+
+      .progress-bar {
+        width: calc(100% - 40px); /* Adjust width for padding */
+        background-color: #ddd;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        position: relative; /* For positioning the driver ID absolutely */
+        padding: 5px; /* Padding inside the progress bar */
+        box-sizing: border-box; /* Include padding in width calculation */
+      }
+
+      .segment {
+        background-color: #eee;
+        height: 20px;
+        float: left;
+        border-right: 1px solid #ccc; /* Visual separator */
+        box-sizing: border-box;
+      }
+
+      .segment:last-child {
+        border-right: none;
+      }
+
+      .driver-id {
+        position: absolute;
+        left: 0;
+        top: 0;
+        padding: 5px 10px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border-top-left-radius: 4px;
+        border-bottom-right-radius: 4px;
+      }
+      .segment.complete {
+        background-color: #4caf50; /* Green background for completed segments */
+      }
+
+      /* ============= //#33 [배달 관리] 페이지 - 여기까지 ============= */
+
       /* ============= //#29 [배터리 관리] 페이지 - 여기부터 ============= */
       /* //#29 배터리 관리 페이지 - 차트 style 지정 */
       .chart-container {
@@ -417,10 +464,10 @@
           <!-- Panel3 -->
           <div class="panel">
             <h2>Driver Work Process</h2>
-            <button class="button-check" onclick="initDriverMap()">
+            <button class="button-check">
               <img
                 src="https://cdn-icons-png.flaticon.com/128/265/265707.png"
-                alt="Load Icon"
+                alt="Progress Icon"
                 style="
                   height: 30px;
                   width: 30px;
@@ -429,8 +476,14 @@
                 "
               />
 
-              Driver Work Process 불러오기
+              Driver 업무 진척도 확인
             </button>
+            <!-- #33-3 -->
+            <div
+              id="driverWorkProcess"
+              style="width: 100%; overflow-x: auto"
+            ></div>
+            <!-- Container for the progress bars -->
           </div>
         </div>
       </div>
@@ -937,7 +990,9 @@
 
             subscribeDriverTopics(); // #33 Driver들의 실시간 위치 얻기
 
-            subscribeDriverStateTopics(); // #33-2 RabbitMQ로부터 Driver들의 서비스 상태를 얻기
+            // #33-2 RabbitMQ로부터 Driver들의 서비스 상태를 얻기
+            // #33-3 Driver의 업무 진척도 [수평 진행률] 업데이트
+            subscribeDriverStateTopics();
           },
           function (error) {
             console.log("WebSocket error: " + error);
@@ -1045,6 +1100,8 @@
           );
 
           updateDriverTable(driverStateData); // #33-2 드라이버 데이터들을 표로 나타내기
+
+          updateProgressBar(driverStateData); // #33-3 Driver의 업무 진척도 [수평 진행률] 업데이트
         });
       }
 
@@ -1067,8 +1124,15 @@
           });
         }
 
+        // #33-2 fix: 위도 또는 경도가 0이면 주소를 빈 문자열로 설정
+        var address =
+          data.latitude === 0 || data.longitude === 0
+            ? "-"
+            : getAddress(data.latitude, data.longitude);
+
         // #33-2 Retrieve the address using the latitude and longitude
-        getAddress(data.latitude, data.longitude)
+        // getAddress(data.latitude, data.longitude)  // #33-2 fix 주석 처리
+        Promise.resolve(address)
           .then((address) => {
             // Assuming data contains properties `driverId`, `status`, and `nextDestination`
             var row = document.querySelector(`#driver-${data.driverId}`);
@@ -1092,6 +1156,7 @@
             console.error("Failed to fetch address: " + error);
           });
       }
+
       function getAddress(latitude, longitude) {
         return new Promise((resolve, reject) => {
           var xhr = new XMLHttpRequest();
@@ -1114,6 +1179,90 @@
         });
       }
 
+      //#33-3 ========== 여기부터 ==========드라이버 업무 진척도를 [수평 진행률 표시줄]을 통해 표현
+      //
+      function loadDriverDeliveries() {
+        Papa.parse("/static/deliveries.csv", {
+          download: true,
+          header: true,
+          complete: function (results) {
+            const deliveriesData = results.data;
+            const deliveryCountByDriver = {};
+            deliveriesData.forEach((delivery) => {
+              const driverId = delivery.driver_id;
+              if (deliveryCountByDriver[driverId]) {
+                deliveryCountByDriver[driverId]++;
+              } else {
+                deliveryCountByDriver[driverId] = 1;
+              }
+            });
+            initializeProgressBars(deliveryCountByDriver);
+          },
+        });
+      }
+
+      // #33-3 Driver의 업무 진척도 [수평 진행률] 생성
+      function initializeProgressBars(deliveryCountByDriver) {
+        const container = document.getElementById("driverWorkProcess");
+        Object.keys(deliveryCountByDriver).forEach((driverId) => {
+          const count = deliveryCountByDriver[driverId];
+          const progressBar = document.createElement("div");
+          progressBar.className = "progress-bar";
+          progressBar.id = `progress-${driverId}`;
+          progressBar.style.width = "100%";
+          progressBar.style.border = "1px solid #ccc";
+
+          // Label for driver ID
+          const driverLabel = document.createElement("div");
+          driverLabel.className = "driver-id";
+          driverLabel.textContent = `Driver ${driverId}`;
+          progressBar.appendChild(driverLabel);
+
+          for (let i = 0; i < count; i++) {
+            const segment = document.createElement("div");
+            segment.className = "segment";
+            segment.style.width = `${100 / count}%`;
+            segment.style.height = "20px";
+            segment.style.float = "left";
+            segment.style.backgroundColor = "#eee";
+            progressBar.appendChild(segment);
+          }
+          container.appendChild(progressBar);
+        });
+      }
+
+      // #33-3 Driver의 업무 진척도 [수평 진행률] 업데이트
+      function updateProgressBar(driverStateData) {
+        // subscribeDriverStateTopics함수 안에서 RabbitMQ에 subscribe를 하고, message를 JSON.parse한 데이터를 바로 받아옴
+
+        // console.log("//#33-3 데이터 수신: " + driverStateData);
+        // console.log("//#33-3 드라이버 ID: " + driverStateData.driverId);
+        // console.log("//#33-3 드라이버 상태: " + driverStateData.status);
+        // console.log("//#33-3 드라이버 다음 도착지 위도: " + driverStateData.latitude);
+        // console.log("//#33-3 드라이버 다음 도착지 경도: " + driverStateData.longitude);
+        const driverId = driverStateData.driverId;
+        const progressBar = document.getElementById(`progress-${driverId}`);
+        if (!progressBar) {
+          console.error(
+            `//#33-3 Progress bar for driver ${driverId} not found!`
+          );
+          return;
+        }
+        const segments = progressBar.getElementsByClassName("segment");
+        let completedCount = 0;
+        for (let segment of segments) {
+          if (segment.style.backgroundColor !== "green") {
+            segment.style.backgroundColor = "green";
+            completedCount++;
+            break;
+          }
+        }
+        console.log(
+          `Driver ${driverId} has completed ${completedCount} deliveries.`
+        );
+      }
+      //#33-3 ========== 여기까지 ==========드라이버 업무 진척도를 [수평 진행률 표시줄]을 통해 표현
+
       // function updateDriverLocation(driverId, location) {
       //   var locationDiv = document.getElementById("driverLocations");
       //   var existingEntry = document.getElementById("location-" + driverId);
@@ -1126,6 +1275,7 @@
       // }
 
       fetchDrivers(); // CSV 파일로부터 driverID 받아오기(fetching) 시작
+      loadDriverDeliveries(); // #33-3 Driver들의 업무 진척도 [수평 진행률] 표시
 
       // #33-1 지도 첫 시작 - 들어온 주문들의 중심 위치로 시작
       function initDriverMap() {

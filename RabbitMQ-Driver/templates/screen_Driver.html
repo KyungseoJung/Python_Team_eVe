@@ -18,6 +18,8 @@
 
 #33-2 드라이버 정보 표로 표시(driver_id, 상태, 다음 도착지)
 
+#33-4 각각의 Driver페이지에 driver_id에 맞게 자신에게 할당된 업무만 나타나도록
+
 -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -187,7 +189,7 @@
             */
       document.addEventListener("DOMContentLoaded", function () {
         var stompClient; // #19 RabbitMQ 서버 연결
-        var deliveries = []; // #17-5
+        var deliveries = []; // #17-5 //#33-4 각각의 Driver페이지에 driver_id에 맞게 자신에게 할당된 업무만 나타나도록
         var currentIndex = 0; // #17-5 현재 데이터 순서를 확인하기 위한 변수
         var marker; //#23 최신 위치에 해당하는 marker가 지도에 1개만 표시되도록
 
@@ -226,7 +228,11 @@
           .then((csvString) => {
             // Assuming the CSV file has headers that match the properties used below
             let results = Papa.parse(csvString, { header: true });
-            deliveries = results.data;
+            // deliveries = results.data;
+            //#33-4 각각의 Driver페이지에 driver_id에 맞게 자신에게 할당된 업무만 나타나도록
+            deliveries = results.data.filter(
+              (delivery) => delivery.driver_id === driverId
+            );
             updateDeliveryInfo();
           })
           .catch((error) => console.error("Error loading the CSV:", error));
@@ -287,7 +293,10 @@
           longitude
         ) {
           // ===================================
-          if (currentIndex >= deliveries.length - 1) {
+          // if (currentIndex >= deliveries.length - 1) {
+          if (currentIndex >= deliveries.length) {
+            //#33-4 deliveries가 이제는 각 driverId에 해당하는 업무만 담고 있으니까 if문 범위 수정
+
             // 모든 업무 완료
             sendStateToAdminRabbitMQ(driverId, "업무 완료", 0, 0);
           } else {
@@ -467,13 +476,14 @@
         // 배달 유형(delivery_type), 위치 데이터(위도, 경도) 표시 문구 업데이트 & 버튼 상태 업데이트 함수
         function updateDeliveryInfo() {
           console.log("//#17-5 updateDeliveryInfo 함수 실행");
-          deliveryType.innerText = deliveries[currentIndex].delivery_type;
-          // #17-4 주석처리
-          //   latitudeDisplay.innerText = deliveries[currentIndex]["location"][0];
-          //   longitudeDisplay.innerText = deliveries[currentIndex]["location"][1];
-
+          if (deliveries.length === 0) {
+            alert("//#33-4 이 Driver에게는 어떤 배달도 할당되지 않음!");
+            return;
+          }
           //========== #17-3 모든 배달 정보를 마치면, 팝업창과 함께 두 버튼 모두 비활성화
-          if (currentIndex >= deliveries.length - 1) {
+          // if (currentIndex >= deliveries.length - 1) {
+          if (currentIndex >= deliveries.length) {
+            //#33-4 deliveries가 이제는 각 driverId에 해당하는 업무만 담고 있으니까 if문 범위 수정
             // 두 버튼 모두 비활성화
             deliveryCompleteBtn.disabled = true;
             pickupCompleteBtn.disabled = true;
@@ -487,13 +497,22 @@
             arrivalAddressDisplay.innerText = "";
             arrivalTimeDisplay.innerText = "";
             // console.log("//#17-4 작업 완료 후 문구 표시");
+
+            return; // #33-4 updateDeliveryInfo 함수 탈출
           } else {
+            // #33-4 수행해야 하는 배달이 아직 완료되지 않았다면 다음 데이터 표시
             //#17-4 위치 표시 - (TMAP API 이용) 기존 위도, 경도를 "도로명 주소"로 변환하고, 표시
             updateAddress(
               deliveries[currentIndex].latitude,
               deliveries[currentIndex].longitude
             );
             arrivalTimeDisplay.innerText = deliveries[currentIndex].time;
+
+            // #33-4 위치 이동: updateDeliveryInfo함수 시작점에서 else 문 안으로
+            deliveryType.innerText = deliveries[currentIndex].delivery_type;
+            // #17-4 주석처리
+            //   latitudeDisplay.innerText = deliveries[currentIndex]["location"][0];
+            //   longitudeDisplay.innerText = deliveries[currentIndex]["location"][1];
 
             if (deliveryType.innerText.trim() === "배달") {
               deliveryCompleteBtn.disabled = false;
@@ -524,34 +543,52 @@
         deliveryCompleteBtn.addEventListener("click", function () {
           sendStateToClientRabbitMQ("배달완료"); // #19 버튼을 누르면, RabbitMQ로 메시지 송신
 
-          if (currentIndex < deliveries.length - 1) {
+          // if (currentIndex < deliveries.length - 1) {
+          if (currentIndex < deliveries.length) {
+            //#33-4 deliveries가 이제는 각 driverId에 해당하는 업무만 담고 있으니까 if문 범위 수정
+
             currentIndex++; // 다음 데이터 (delivery_type, 위치 데이터) 표시
             updateDeliveryInfo();
 
-            // #33-2 관리자 페이지 RabbitMQ로 메시지 송신
-            ReadyToSendStateToAdminRabbitMQ(
-              driverId,
-              "배달완료",
-              deliveries[currentIndex].latitude,
-              deliveries[currentIndex].longitude
-            );
+            // #33-4 아직 업무가 남아있다면
+            if (currentIndex < deliveries.length) {
+              // #33-2 관리자 페이지 RabbitMQ로 메시지 송신
+              ReadyToSendStateToAdminRabbitMQ(
+                driverId,
+                "배달완료",
+                deliveries[currentIndex].latitude,
+                deliveries[currentIndex].longitude
+              );
+            } else {
+              // #33-4 남아있는 업무가 없다면 - 위도, 경도 가져올 거 없으니까 0,0 으로 설정
+              ReadyToSendStateToAdminRabbitMQ(driverId, "배달완료", 0, 0);
+            }
           }
         });
 
         pickupCompleteBtn.addEventListener("click", function () {
           sendStateToClientRabbitMQ("수거완료"); // #19 버튼을 누르면, RabbitMQ로 메시지 송신
 
-          if (currentIndex < deliveries.length - 1) {
+          // if (currentIndex < deliveries.length - 1) {
+          if (currentIndex < deliveries.length) {
+            //#33-4 deliveries가 이제는 각 driverId에 해당하는 업무만 담고 있으니까 if문 범위 수정
+
             currentIndex++; // 다음 데이터 (delivery_type, 위치 데이터) 표시
             updateDeliveryInfo();
 
-            // #33-2 관리자 페이지 RabbitMQ로 메시지 송신
-            ReadyToSendStateToAdminRabbitMQ(
-              driverId,
-              "수거완료",
-              deliveries[currentIndex].latitude,
-              deliveries[currentIndex].longitude
-            );
+            // #33-4 아직 업무가 남아있다면
+            if (currentIndex < deliveries.length) {
+              // #33-2 관리자 페이지 RabbitMQ로 메시지 송신
+              ReadyToSendStateToAdminRabbitMQ(
+                driverId,
+                "수거완료",
+                deliveries[currentIndex].latitude,
+                deliveries[currentIndex].longitude
+              );
+            } else {
+              // #33-4 남아있는 업무가 없다면 - 위도, 경도 가져올 거 없으니까 0,0 으로 설정
+              ReadyToSendStateToAdminRabbitMQ(driverId, "수거완료", 0, 0);
+            }
           }
         });
 
