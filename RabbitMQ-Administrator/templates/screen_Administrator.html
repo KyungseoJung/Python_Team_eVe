@@ -15,7 +15,7 @@
 //#33 Driver의 수만큼 다른 웹페이지 실행되도록 & driver_id에 따라 다른 RabbitMQ 주소를 부여받고, 각각 다른 주소로 데이터를 송신하도록
 //#33-1 지도에 표시
 //#33-2 드라이버 정보 표로 표시(driver_id, 상태, 다음 도착지)
-//#33-3 드라이버 업무 진척도를 [수평 진행률 표시줄]을 통해 표현
+//#33-3 드라이버 업무 진척도를 [수평 진행률 표시줄]을 통해 표현 
 -->
 
 <!DOCTYPE html>
@@ -478,7 +478,7 @@
 
               Driver 업무 진척도 확인
             </button>
-            <!-- #33-3 -->
+            <!-- //#33-3 -->
             <div
               id="driverWorkProcess"
               style="width: 100%; overflow-x: auto"
@@ -991,7 +991,7 @@
             subscribeDriverTopics(); // #33 Driver들의 실시간 위치 얻기
 
             // #33-2 RabbitMQ로부터 Driver들의 서비스 상태를 얻기
-            // #33-3 Driver의 업무 진척도 [수평 진행률] 업데이트
+            //#33-3 Driver의 업무 진척도 [수평 진행률] 업데이트
             subscribeDriverStateTopics();
           },
           function (error) {
@@ -1101,7 +1101,7 @@
 
           updateDriverTable(driverStateData); // #33-2 드라이버 데이터들을 표로 나타내기
 
-          updateProgressBar(driverStateData); // #33-3 Driver의 업무 진척도 [수평 진행률] 업데이트
+          updateProgressBar(driverStateData); //#33-3 Driver의 업무 진척도 [수평 진행률] 업데이트
         });
       }
 
@@ -1180,7 +1180,6 @@
       }
 
       //#33-3 ========== 여기부터 ==========드라이버 업무 진척도를 [수평 진행률 표시줄]을 통해 표현
-      //
       function loadDriverDeliveries() {
         Papa.parse("/static/deliveries.csv", {
           download: true,
@@ -1189,11 +1188,14 @@
             const deliveriesData = results.data;
             const deliveryCountByDriver = {};
             deliveriesData.forEach((delivery) => {
-              const driverId = delivery.driver_id;
-              if (deliveryCountByDriver[driverId]) {
-                deliveryCountByDriver[driverId]++;
-              } else {
-                deliveryCountByDriver[driverId] = 1;
+              if (delivery.driver_id) {
+                // #33-3 driver_id가 존재하는 값인지 확인
+
+                if (deliveryCountByDriver[delivery.driver_id]) {
+                  deliveryCountByDriver[delivery.driver_id]++;
+                } else {
+                  deliveryCountByDriver[delivery.driver_id] = 1;
+                }
               }
             });
             initializeProgressBars(deliveryCountByDriver);
@@ -1201,7 +1203,7 @@
         });
       }
 
-      // #33-3 Driver의 업무 진척도 [수평 진행률] 생성
+      //#33-3 Driver의 업무 진척도 [수평 진행률] 생성
       function initializeProgressBars(deliveryCountByDriver) {
         const container = document.getElementById("driverWorkProcess");
         Object.keys(deliveryCountByDriver).forEach((driverId) => {
@@ -1231,7 +1233,7 @@
         });
       }
 
-      // #33-3 Driver의 업무 진척도 [수평 진행률] 업데이트
+      //#33-3 Driver의 업무 진척도 [수평 진행률] 업데이트
       function updateProgressBar(driverStateData) {
         // subscribeDriverStateTopics함수 안에서 RabbitMQ에 subscribe를 하고, message를 JSON.parse한 데이터를 바로 받아옴
 
@@ -1275,7 +1277,7 @@
       // }
 
       fetchDrivers(); // CSV 파일로부터 driverID 받아오기(fetching) 시작
-      loadDriverDeliveries(); // #33-3 Driver들의 업무 진척도 [수평 진행률] 표시
+      loadDriverDeliveries(); //#33-3 Driver들의 업무 진척도 [수평 진행률] 표시
 
       // #33-1 지도 첫 시작 - 들어온 주문들의 중심 위치로 시작
       function initDriverMap() {
