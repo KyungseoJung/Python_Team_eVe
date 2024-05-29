@@ -1,3 +1,5 @@
+<!-- 강화학습 코드 통합, 지도 안 켜져 있을 때 빨간색 하이라이트까지 구현 완료 -->
+
 <!-- // T-Map appkey = 5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu -->
 
 <!-- 
@@ -954,36 +956,68 @@
         }
 
         // ============ 지도 하이라이트 ============
-        // 지도가 초기화되지 않았다면, initOrderMap 함수를 호출
+        // 지도가 초기화되지 않았다면, initOrderMap 함수를 호출 - //#30-2 시간 지연 주기 - 에러 발생해서 해결 목적
         if (!orderMap) {
           initOrderMap();
-        }
-        // 새로운 선택을 한 마커 외의 다른 마커들은 원상태로 (Reset the icon of the previously selected marker)
-        if (selectedMarker) {
+
+          // #30-2 orderMap이 없다면, initOrderMap 먼저 실행 후 - 2초 지연 후에 아래 코드 실행
+          setTimeout(() => {
+            // 새로운 선택을 한 마커 외의 다른 마커들은 원상태로 (Reset the icon of the previously selected marker)
+            if (selectedMarker) {
+              selectedMarker.setMap(null); // Remove the old marker
+
+              let newMarker = new Tmapv3.Marker({
+                position: new Tmapv3.LatLng(
+                  selectedMarker.getPosition().lat(),
+                  selectedMarker.getPosition().lng()
+                ),
+                map: orderMap,
+              });
+              markers[selectedMarkerIndex] = newMarker; // Replace the old marker with the new one
+            }
+
+            // 새로 선택한 고객의 마커 하이라이트 표시 (Set the new selected marker)
+            selectedMarker = markers[index];
+            selectedMarkerIndex = index; // Keep track of the selected index
+            selectedMarker.setMap(null); // Remove the old marker
+            selectedMarker = new Tmapv3.Marker({
+              position: new Tmapv3.LatLng(lat, lon),
+              map: orderMap,
+              // icon: "https://cdn-icons-png.flaticon.com/128/14034/14034740.png",
+              icon: "/static/image/redMarker.png",
+              size: new Tmapv3.Size(0.1, 0.1), // 아이콘의 크기 설정
+            });
+            markers[index] = selectedMarker; // Update the array with the new highlighted marker
+          }, 2000); // 2초 지연
+        } else {
+          // #30-2 fix: 위 코드와 동일 (initOrderMap 실행만 안 한 버전)
+          // 새로운 선택을 한 마커 외의 다른 마커들은 원상태로 (Reset the icon of the previously selected marker)
+          if (selectedMarker) {
+            selectedMarker.setMap(null); // Remove the old marker
+
+            let newMarker = new Tmapv3.Marker({
+              position: new Tmapv3.LatLng(
+                selectedMarker.getPosition().lat(),
+                selectedMarker.getPosition().lng()
+              ),
+              map: orderMap,
+            });
+            markers[selectedMarkerIndex] = newMarker; // Replace the old marker with the new one
+          }
+
+          // 새로 선택한 고객의 마커 하이라이트 표시 (Set the new selected marker)
+          selectedMarker = markers[index];
+          selectedMarkerIndex = index; // Keep track of the selected index
           selectedMarker.setMap(null); // Remove the old marker
-
-          let newMarker = new Tmapv3.Marker({
-            position: new Tmapv3.LatLng(
-              selectedMarker.getPosition().lat(),
-              selectedMarker.getPosition().lng()
-            ),
+          selectedMarker = new Tmapv3.Marker({
+            position: new Tmapv3.LatLng(lat, lon),
             map: orderMap,
+            // icon: "https://cdn-icons-png.flaticon.com/128/14034/14034740.png",
+            icon: "/static/image/redMarker.png",
+            size: new Tmapv3.Size(0.1, 0.1), // 아이콘의 크기 설정
           });
-          markers[selectedMarkerIndex] = newMarker; // Replace the old marker with the new one
+          markers[index] = selectedMarker; // Update the array with the new highlighted marker
         }
-
-        // 새로 선택한 고객의 마커 하이라이트 표시 (Set the new selected marker)
-        selectedMarker = markers[index];
-        selectedMarkerIndex = index; // Keep track of the selected index
-        selectedMarker.setMap(null); // Remove the old marker
-        selectedMarker = new Tmapv3.Marker({
-          position: new Tmapv3.LatLng(lat, lon),
-          map: orderMap,
-          // icon: "https://cdn-icons-png.flaticon.com/128/14034/14034740.png",
-          icon: "/static/image/redMarker.png",
-          size: new Tmapv3.Size(0.1, 0.1), // 아이콘의 크기 설정
-        });
-        markers[index] = selectedMarker; // Update the array with the new highlighted marker
       }
 
       // #30-3 RabbitMQ 통신
