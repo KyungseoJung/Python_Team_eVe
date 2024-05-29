@@ -721,6 +721,7 @@
       var markers = []; // Global array to hold markers
       var selectedMarker = null; // To keep track of the selected marker
       var stompClient; // #30-2 미리 선언
+      var confirmedDataLoaded = false; //#30-2 fix: loadConfirmedOrderData함수가 실행된 후, highlightClientData함수가 실행되어야 함
 
       // #30 latitude,longitude를 통해서 "도로명 주소"를 column으로 나타내기
       function loadConfirmedOrderData() {
@@ -792,6 +793,8 @@
           .catch((error) => {
             alert("Error loading data: " + error);
           });
+
+        confirmedDataLoaded = true; // #30-2 fix: confirmedDataLoaded 함수가 실행된 이후에 highlightClientData함수가 실행되도록
       }
 
       // #30 위도, 경도를 바탕으로 도로명 주소 return
@@ -1006,27 +1009,55 @@
 
         stompClient.subscribe(subscribeTopic, function (message) {
           console.log("//#30-3 데이터 수신 - 고객 ID: " + message.body);
-          updateRowColor(message.body);
+          ReadyToUpdateRowColor(message.body); // #30-2 fix
+          // updateRowColor(message.body);
         });
       }
 
-      function updateRowColor(clientId) {
+      //#30-2 fix
+      function ReadyToUpdateRowColor(clientId) {
         var table = document.getElementById("confirmedOrderTable");
-        var columnIndex = 0; // Assume client_id is the first column, adjust if necessary
-        // Find the index for 'client_id' column
-        var headers = table.rows[0].cells;
-        for (var j = 0; j < headers.length; j++) {
-          if (headers[j].textContent.trim().toLowerCase() === "client id") {
-            columnIndex = j;
-            break;
-          }
+
+        // table을 찾지 못 했다면 2초 후에 다시 table 찾아서 그를 바탕으로 코드 실행
+        if (!table || table.rows.length < 2) {
+          loadConfirmedOrderData(); // 데이터 로드를 요청하고
+
+          setTimeout(() => {
+            table = document.getElementById("confirmedOrderTable");
+            updateRowColor(clientId, table);
+          }, 2000); // 2초 지연
         }
-        // Change row color to green where client_id matches
-        for (var i = 1; i < table.rows.length; i++) {
-          var row = table.rows[i];
-          if (row.cells[columnIndex].textContent.trim() === clientId) {
-            row.style.backgroundColor = "green";
-            break;
+        // table을 찾았다면, 그 table을 바탕으로 코드 실행
+        else {
+          //
+          updateRowColor(clientId, table);
+        }
+      }
+
+      function updateRowColor(clientId, table) {
+        // #30-2 fix: confirmedDataLoaded 함수가 실행된 이후에 highlightClientData함수가 실행되도록
+        if (!table || table.rows.length < 2) {
+          loadConfirmedOrderData(); // 데이터 로드를 요청하고
+          // 기다리는 코드 추가
+          console.log("//#30-2 fix: 이제 updateRowColor 함수 쭉 실행");
+        } else {
+          var table = document.getElementById("confirmedOrderTable");
+          var columnIndex = 0; // Assume client_id is the first column, adjust if necessary
+          // Find the index for 'client_id' column
+          var headers = table.rows[0].cells;
+          for (var j = 0; j < headers.length; j++) {
+            if (headers[j].textContent.trim().toLowerCase() === "client id") {
+              columnIndex = j;
+              break;
+            }
+          }
+          // Change row color to green where client_id matches
+          for (var i = 1; i < table.rows.length; i++) {
+            var row = table.rows[i];
+            if (row.cells[columnIndex].textContent.trim() === clientId) {
+              row.style.backgroundColor = "green";
+              break;
+            }
           }
         }
       }
