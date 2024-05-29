@@ -5,360 +5,310 @@
 # //#28 수리모형 코드 통합 - [경로 계산하기] 버튼 누르면, 수리모형 코드 실행되도록 - csv 파일 지정한 파일 위치에 저장되도록
 # //#29 배터리 강화학습 코드 통합
 
-from flask import Flask, render_template
-from flask import jsonify, request # //#28 수리모형 코드 통합을 위한 import
+# from flask import Flask, render_template
+# from flask import jsonify, request # //#28 수리모형 코드 통합을 위한 import
 
 import pandas as pd
 import eve_0523_test1 # //#28 수리모형 코드 통합 (Import 수리모형 함수를 포함한 Python file )
+
+import pandas as pd
+from datetime import datetime
+from flask import Flask, render_template, jsonify, request
+from dash import Dash, dcc, html
+from dash.dependencies import Input, Output, State
+import dash_daq as daq
 
 app = Flask(__name__)
 
 #===================================================================================================
 # //#29 배터리 강화학습 코드 통합 - 여기부터
 
+# Initialize Dash app
+dash_app = Dash(__name__, server=app, url_base_pathname='/dash/')
 
-# import pandas as pd
-# import numpy as np
+# Load initial data
+battery_dfs = pd.read_csv('./data/batt1.csv')
+battery_dfs['Timestamp'] = pd.to_datetime(battery_dfs['Timestamp'])
 
-# import math
-# import glob
-# import os
-# from datetime import datetime
+RL_data = pd.read_csv('./RL_data/batt1.csv')
+RL_data['Timestamp'] = pd.to_datetime(RL_data['Timestamp'])
 
-# import pybamm
+# Define Dash layout
+dash_app.layout = html.Div([
+    dcc.Store(id='selected-battery', data='batt1'),
+    html.Nav([
+        html.Ul([
+            html.Li(html.A('Home', href='http://127.0.0.1:5004', style={'color': '#F2F2F2', 'text-decoration': 'none', 'font-size': '24px', 'background-color': '#4A4A4A', 'padding': '10px 20px', 'border-radius': '5px'})),
+        ], style={'list-style-type': 'none', 'margin': 0, 'padding': 0, 'display': 'flex', 'justify-content': 'flex-start'})
+    ], style={'background-color': '#1E1E1E', 'padding': '10px', 'margin': 0}),
+    html.Div([
+        html.Div([
+            html.H1("About Battery", style={'color': '#F2F2F2'}),
+            html.Div(
+                id='Batt',
+                children=[dcc.Dropdown(['batt1', 'batt2', 'batt3', 'batt4', 'batt5'], 'batt1', id='battery-dropdown', style={'color': 'black', 'font-size': 15, 'background-color': '#2B2B2B'})],
+            ),
+            html.P(
+                [
+                    "이 대시보드는 배터리 상태 모니터링 시스템입니다. ", html.Br(),
+                    "실시간 데이터와 계획된 데이터를 비교하여 배터리의 충전 상태, 전류, 온도, 전압을 시각화합니다. ", html.Br(),
+                    "배터리 선택에 따라 관련 데이터를 표시하며, 현재 시간을 포함한 다양한 대시보드 요소를 제공합니다. ", html.Br(), html.Br(),
+                ],
+                style={'color': '#F2F2F2', 'border-bottom': '2.5px solid gray', "padding": '0 10 0 10'}
+            ),
+            html.Div(
+                id="control-panel-utc",
+                children=[
+                    daq.LEDDisplay(
+                        id="control-panel-utc-component",
+                        value="00:00",
+                        label="Time",
+                        size=40,
+                        color="#fec036",
+                        backgroundColor="#303030",
+                        style={"padding": '0 5 0 5', "margin": '0 5 0 5'}
+                    ),
+                    dcc.Interval(
+                        id='interval-component-utc',
+                        interval=60 * 1000,  # Update every minute
+                        n_intervals=0
+                    )
+                ],
+            ),
+            html.Div([html.Br()]),
+            html.Div([
+                html.Div(
+                    id="control-panel-elevation",
+                    children=[
+                        daq.Tank(
+                            id="control-panel-elevation-component",
+                            label="Battery Capacity",
+                            min=0,
+                            max=1,
+                            value=0.8,  # 초기 값 설정
+                            units="%",
+                            showCurrentValue=True,
+                            color="#303030",
+                            style={'color': '#F2F2F2'}  # 라벨의 색상 수정
+                        )
+                    ],
+                    style={"padding": 0, "margin": 0}
+                ),
+                html.Div(
+                    id="control-panel-temperature",
+                    children=[
+                        daq.Tank(
+                            id="control-panel-temperature-component",
+                            label="Temperature",
+                            min=0,
+                            max=400,
+                            value=290,  # 초기 값 설정
+                            units="Kelvin",
+                            showCurrentValue=True,
+                            color="#303030",
+                            style={'color': '#F2F2F2'}
+                        )
+                    ],
+                    style={"padding": 0, "margin": 0}
+                ),
+                dcc.Interval(
+                    id='interval-component-now',
+                    interval=1 * 1000,  # Update every second
+                    n_intervals=0
+                )
+            ], style={"display": "flex", "justify-content": "space-around", "padding": 0, "margin": 0}),
+        ], style={'background-color': '#1E1E1E', "margin": 0, "padding": '10px'}),
+        html.Div([
+            html.Div(
+                id="graph_1",
+                children=[
+                    dcc.Graph(id='battery-graph_1'),
+                    dcc.Interval(
+                        id='interval-component_1',
+                        interval=1 * 1000,
+                        n_intervals=0
+                    )
+                ],
+                style={"padding": 0, "margin": 0, "height": "100%"}
+            ),
+            html.Div(
+                id="graph_2",
+                children=[
+                    dcc.Graph(id='battery-graph_2'),
+                    dcc.Interval(
+                        id='interval-component_2',
+                        interval=60 * 1000,
+                        n_intervals=0
+                    )
+                ],
+                style={"padding": 0, "margin": 0, "height": "100%"}
+            ),
+            html.Div(
+                id="graph_3",
+                children=[
+                    dcc.Graph(id='battery-graph_3'),
+                    dcc.Interval(
+                        id='interval-component_3',
+                        interval=60 * 1000,
+                        n_intervals=0
+                    )
+                ],
+                style={"padding": 0, "margin": 0, "height": "100%"}
+            ),
+            html.Div(
+                id="graph_4",
+                children=[
+                    dcc.Graph(id='battery-graph_4'),
+                    dcc.Interval(
+                        id='interval-component_4',
+                        interval=60 * 1000,
+                        n_intervals=0
+                    )
+                ],
+                style={"padding": 0, "margin": 0, "height": "100%"}
+            )
+        ], style={
+            'color': '#BFBFBF',
+            "padding": 0,
+            "margin": 0,
+            'display': 'grid',
+            'gap': 0,
+            "grid-template-columns": 'repeat(2, 1fr)',
+            "grid-template-rows": 'repeat(2, 1fr)'
+        })
+    ], style={'display': 'grid', "grid-template-columns": "1fr 2fr", 'align-items': 'stretch', 'background-color': '#ffffff'})
+], style={'color': '#000000', 'background-color': '#ffffff', "padding": 0, "margin": 0})
 
-# import gymnasium as gym
-# from gymnasium import spaces
+# Define Dash callbacks
+@dash_app.callback(
+    Output('control-panel-utc-component', 'value'),
+    Input('interval-component-utc', 'n_intervals')
+)
+def update_time(n):
+    current_time = datetime.now()
+    return current_time.strftime('%H:%M')
 
-# from stable_baselines3 import PPO
-# from stable_baselines3.common.env_checker import check_env
-# from stable_baselines3.common.env_util import make_vec_env
+@dash_app.callback(
+    Output('selected-battery', 'data'),
+    Input('battery-dropdown', 'value')
+)
+def update_selected_battery(selected_battery):
+    return selected_battery
 
-# from flask import Flask, render_template, jsonify
+@dash_app.callback(
+    [
+        Output('control-panel-elevation-component', 'value'),
+        Output('control-panel-temperature-component', 'value'),
+    ],
+    [Input('interval-component-now', 'n_intervals'), Input('selected-battery', 'data')]
+)
+def update_tank_values(n_intervals, selected_battery):
+    RL_data = pd.read_csv(f'./RL_data/{selected_battery}.csv')
+    RL_data['Timestamp'] = pd.to_datetime(RL_data['Timestamp'])
+    current_time = datetime.now()
+    data_now = RL_data[RL_data['Timestamp'] <= current_time].iloc[-1]  # Get the latest data available
+    state = round(data_now['state'], 2)
+    temp = round(data_now['temp'], 2)
+    return state, temp
 
+@dash_app.callback(
+    [Output('battery-graph_1', 'figure'), Output('battery-graph_2', 'figure'), Output('battery-graph_3', 'figure'), Output('battery-graph_4', 'figure')],
+    [Input('interval-component_1', 'n_intervals'), Input('interval-component_2', 'n_intervals'), Input('interval-component_3', 'n_intervals'), Input('interval-component_4', 'n_intervals'), Input('selected-battery', 'data')]
+)
+def update_graph_live(n1, n2, n3, n4, selected_battery):
+    battery_dfs = pd.read_csv(f'./data/{selected_battery}.csv')
+    battery_dfs['Timestamp'] = pd.to_datetime(battery_dfs['Timestamp'])
+    RL_data = pd.read_csv(f'./RL_data/{selected_battery}.csv')
+    RL_data['Timestamp'] = pd.to_datetime(RL_data['Timestamp'])
 
-# #=========================================================================================================
-# #class BM 은 강화학습환경 > batt3.zip 으로 저장되어있는 모델을 불러왔어 class BM에 적용되어 강화학습으로 충전을 진행
-# #=========================================================================================================
-# class BM(gym.Env):
-#     def __init__(self,start_soc, goal_time,goal_soc,render_mode = None):
-#         options = {"thermal": "lumped"}
-#         self.model = pybamm.lithium_ion.SPMe(options)
+    current_time = datetime.now()
+    real_time_data = RL_data[RL_data['Timestamp'] <= current_time]
 
-#         self.params = pybamm.ParameterValues("Chen2020").copy()
-#         init_input = {
-#             'Number of cells connected in series to make a battery': 4164,
-#             'Upper voltage cut-off [V]': 5,
-#         }
-#         self.params.update(init_input)
+    figure_1 = {
+        'data': [
+            {'x': battery_dfs['Timestamp'], 'y': battery_dfs['state'], 'type': 'line', 'name': 'CC', 'line': {'dash': 'dash', 'color': '#D09002'}, 'hoverinfo': 'y+name'},
+            {'x': real_time_data['Timestamp'], 'y': real_time_data['state'], 'type': 'line', 'name': 'RL', 'line': {'color': '#fec036'}, 'hoverinfo': 'y+name'},
+        ],
+        'layout': {
+            'title': 'Battery State of Charge Over Time',
+            'transition': {'duration': 500, 'easing': 'cubic-in-out'},
+            'yaxis': {'title': 'State of Charge (%)'},
+            'uirevision': 'constant',
+            'plot_bgcolor': '#2B2B2B',
+            'paper_bgcolor': '#2B2B2B',
+            'font': {'color': '#D5D5D5'},
+            'legend': {'x': 0.99, 'y': 1.0, 'xanchor': 'left', 'yanchor': 'top'},
+            'xaxis': {
+                'gridcolor': '#7f7f7f',
+                'gridwidth': 1,
+            },
+        }
+    }
 
-#         self.solutions = []
+    figure_2 = {
+        'data': [
+            {'x': battery_dfs['Timestamp'], 'y': battery_dfs['current'], 'type': 'line', 'name': 'CC', 'line': {'dash': 'dash', 'color': '#D09002'}, 'hoverinfo': 'y+name'},
+            {'x': real_time_data['Timestamp'], 'y': real_time_data['current'], 'type': 'line', 'name': 'RL', 'line': {'color': '#fec036'}, 'hoverinfo': 'y+name'},
+        ],
+        'layout': {
+            'title': 'Battery Current Over Time',
+            'transition': {'duration': 500, 'easing': 'cubic-in-out'},
+            'yaxis': {'title': 'Current (A)'},
+            'uirevision': 'constant',
+            'plot_bgcolor': '#2B2B2B',
+            'paper_bgcolor': '#2B2B2B',
+            'font': {'color': '#D5D5D5'},
+            'legend': {'x': 0.99, 'y': 1.0, 'xanchor': 'left', 'yanchor': 'top'},
+            'xaxis': {
+                'gridcolor': '#7f7f7f',
+                'gridwidth': 1,
+            },
+        }
+    }
 
-#         # 기본 세팅
-#         self.r_max_temp = 273 + 35
-#         self.r_max_volt = 4.2
-#         self.SoC_desired = goal_soc
+    figure_3 = {
+        'data': [
+            {'x': battery_dfs['Timestamp'], 'y': battery_dfs['temp'], 'type': 'line', 'name': 'CC', 'line': {'dash': 'dash', 'color': '#D09002'}, 'hoverinfo': 'y+name'},
+            {'x': real_time_data['Timestamp'], 'y': real_time_data['temp'], 'type': 'line', 'name': 'RL', 'line': {'color': '#fec036'}, 'hoverinfo': 'y+name'},
+        ],
+        'layout': {
+            'title': 'Battery Temperature Over Time',
+            'transition': {'duration': 500, 'easing': 'cubic-in-out'},
+            'yaxis': {'title': 'Temperature (°C)'},
+            'uirevision': 'constant',
+            'plot_bgcolor': '#2B2B2B',
+            'paper_bgcolor': '#2B2B2B',
+            'font': {'color': '#D5D5D5'},
+            'legend': {'x': 0.99, 'y': 1.0, 'xanchor': 'left', 'yanchor': 'top'},
+            'xaxis': {
+                'gridcolor': '#7f7f7f',
+                'gridwidth': 1,
+            },
+        }
+    }
 
-#         self.volt = 0
-#         self.temp = 0
-        
-#         self.time_goal = 0
-#         self.ep_num = 0
-#         self.time_step = 0
-#         self.MAX_time_step = 3600*2
+    figure_4 = {
+        'data': [
+            {'x': battery_dfs['Timestamp'], 'y': battery_dfs['volt'], 'type': 'line', 'name': 'CC', 'line': {'dash': 'dash', 'color': '#D09002'}, 'hoverinfo': 'y+name'},
+            {'x': real_time_data['Timestamp'], 'y': real_time_data['volt'], 'type': 'line', 'name': 'RL', 'line': {'color': '#fec036'}, 'hoverinfo': 'y+name'},
+        ],
+        'layout': {
+            'title': 'Battery Voltage Over Time',
+            'transition': {'duration': 500, 'easing': 'cubic-in-out'},
+            'yaxis': {'title': 'Voltage (V)'},
+            'uirevision': 'constant',
+            'plot_bgcolor': '#2B2B2B',
+            'paper_bgcolor': '#2B2B2B',
+            'font': {'color': '#D5D5D5'},
+            'legend': {'x': 0.99, 'y': 1.0, 'xanchor': 'left', 'yanchor': 'top'},
+            'xaxis': {
+                'gridcolor': '#7f7f7f',
+                'gridwidth': 1,
+            },
+        }
+    }
 
-#         # test 모델의 축
-#         self.time_goal  = goal_time
-#         self.init_soc = start_soc
-
-#         self.observation_space = spaces.Box(low=0, high=400, shape=(4,), dtype=np.float32)
-#         self.action_space = spaces.Discrete(30)
-
-
-
-#     def step(self,action):
-        
-#         options = {"thermal": "lumped"}
-#         model = pybamm.lithium_ion.SPMe(options)
-#         try:
-
-#             if self.SoC >= self.SoC_desired or self.SoC >= 1:
-#                 terminated = True
-#                 self.SoC = 1
-
-#             else:
-#                 terminated = False
-
-#             experiment = pybamm.Experiment([f"Charge at {action/10}C for 30 sec"])
-#             sim = pybamm.Simulation(model, experiment=experiment, parameter_values=self.params)
-#             step_solution = sim.solve(starting_solution=self.solutions[-1].last_state)
-#             self.solutions += [step_solution.last_state]
-            
-
-#             # Calculate reward based on various factors
-#             if self.time_step >= self.MAX_time_step:
-#                 terminated = True
-#                 reward = -10000
-
-
-#             self.temp = step_solution["X-averaged cell temperature [K]"].entries[-1]
-#             self.volt = step_solution["Terminal voltage [V]"].entries[-1]
-#             Q = self.params["Nominal cell capacity [A.h]"]
-#             DC = step_solution["Discharge capacity [A.h]"].entries[-1]
-#             self.SoC = self.SoC-DC/Q
-#             if self.time_step <= self.time_goal:
-#                 crie = self.SoC > (0.6/self.time_goal)*self.time_step+0.2
-#                 if crie:
-#                     r_soc = 0
-#                 else:
-#                     r_soc = 10*(self.SoC - ((0.6/self.time_goal)*self.time_step+0.2))
-#             else :
-#                 r_soc = (self.time_goal - self.time_step)   
-#             r_temp = -5 * abs(self.temp - (273+35)) if self.temp> (273+35) else 0
-#             r_volt = -200 * abs(self.volt - self.r_max_volt) if self.volt > self.r_max_volt else 0
-
-#             reward = r_temp +r_volt + r_soc
-#             self.time_step +=1
-#         except:
-#             reward = -1000
-#             terminated = True
-
-
-#         observation = self._get_obs()
-#         info = self._get_info()
-
-
-#         # print(self.time_step , observation,reward,"|",float(action),"|")
-#         return observation, reward, terminated, False, info
-
-#     def reset(self, seed=None, options=None):
-#         #print(self.init_soc)
-#         super().reset(seed=seed)
-#         options = {"thermal": "lumped"}
-#         model = pybamm.lithium_ion.SPMe(options)
-#         self.SoC = self.init_soc
-#         experiment = pybamm.Experiment(["Rest for 30 min"])
-#         sim = pybamm.Simulation(model, experiment=experiment, parameter_values=self.params)
-#         step_solution = sim.solve(initial_soc=self.init_soc)
-#         self.solutions += [step_solution.last_state]
-
-#         observation = self._get_obs()
-#         info = self._get_info()
-#         self.ep_num +=1
-#         self.time_step = 0
-#         return observation, info
-
-#     def generate_random_number(self,time_goal):
-#         self.time_goal = time_goal * 2 -5
-#         #in test 지정
-    
-#     def update_init_soc(self, init_soc):
-#         self.init_soc = init_soc
-    
-#     def get_last_soc(self):
-#         print("Last_soc:",self.SoC)
-#         return self.SoC
-    
-#     def get_last_solution(self):
-#         return self.solutions
-        
-    
-#     def _get_obs(self):
-#         return np.array([self.SoC,self.volt,self.temp,self.time_goal-self.time_step], dtype=np.float32)
-
-#     def _get_info(self):
-#         return {"distance": self.SoC_desired - self.SoC}
-# #=====================================================================================================================
-# # SumulateBattery 보연이형이 준 파일을 바탕으로 강화학습과 배터리 시뮬레이터를 통해 배터리 데이터를 분단위로 기록
-# #=====================================================================================================================
-# class SumulateBattery:
-#     def RoadRoutData(self,BattID):
-#         # 파일 경로 설정
-#         directory_path = './data_input' # 보연이형이 만든 파일 배터리 경로 
-
-#         # glob을 사용하여 패턴에 맞는 파일 목록 얻기
-#         csv_pattern = os.path.join(directory_path, '*.csv')
-#         csv_files = glob.glob(csv_pattern) # 파일안에 들어 있는 모든 csv 파일 리스트를 탐색
-
-#         # 빈 리스트 생성 > 보연이형이 생성한 배터리 데이터를 한 파일로 읽어오기
-#         dataframes = []
-
-#         for csv_file in csv_files:
-#             df = pd.read_csv(csv_file)
-#             dataframes.append(df)
-
-#         # 리스트의 모든 DataFrame을 하나로 연결
-#         cdv = pd.concat(dataframes, ignore_index=True)
-
-#         # 배터리 충전 전략을 위한 데이터 형식으로 바꾸기
-#         cdv_1 =cdv[['Battery_Num','Node','Time','State']]
-#         battery = cdv_1[cdv_1['Battery_Num'] == BattID]
-#         BatterySituation = []
-        
-#         for i in range(len(battery) - 1):
-#             time_vari = battery.iloc[i + 1]["Time"] - battery.iloc[i]["Time"]
-#             state_vari = battery.iloc[i + 1]["State"] - battery.iloc[i]["State"]
-#             BatterySituation.append((time_vari, state_vari))
-
-#         return BatterySituation
-
-#     # 배터리 별로 충전 시뮬레이션을 진행
-#     def Simulation(self,BattID):
-#         BatterySituation = self.RoadRoutData(BattID) # RoadRoutData 함수를 통해 데이터를 불러오기
-#         SoC = 1.0 # 초기 SoC는 100% (배터리 충전 상태)
-#         solutions = [] # 배터리 시뮬레이션의 해를 저장
-#         SoC_imin_list = [] # 1분 단위 SoC를 저장
-
-#         # 배터리 시뮬레이터 불러오기 PyBamm 사용
-#         options = {"thermal": "lumped"}
-#         model = pybamm.lithium_ion.SPMe(options)
-#         params = pybamm.ParameterValues("Chen2020").copy()
-#         # 초기 배터리 상태 구현 93KwH 
-#         # 세부 파라미터 조정 전
-#         init_input = {
-#             'Number of cells connected in series to make a battery': 4164,
-#             'Upper voltage cut-off [V]': 5,
-#         }
-#         params.update(init_input)
-
-#         experiment = pybamm.Experiment(["Rest for 1 min"])
-#         sim = pybamm.Simulation(model, experiment=experiment, parameter_values=params)
-
-#         step_solution = sim.solve(initial_soc=1)
-#         solutions += [step_solution.last_state]
-#         # 배터리 데이터를 순차적으로 불러와 충전과 방전을 반복
-#         for i in range(len(BatterySituation)):
-            
-#             time = BatterySituation[i][0]
-#             SoC_state = BatterySituation[i][1]
-#             CargeRate = (SoC_state / time) * (60 / 75)
-#             # 충전 상태에 따라 별도의 전략을 실행
-#             if SoC_state == 0: # Rest > 대기
-#                 options = {"thermal": "lumped"}
-#                 model = pybamm.lithium_ion.SPMe(options)
-#                 params = pybamm.ParameterValues("Chen2020").copy()
-#                 init_input = {
-#                     'Number of cells connected in series to make a battery': 4164,
-#                     'Upper voltage cut-off [V]': 5,
-#                 }
-#                 params.update(init_input)
-#                 ChargeMethod = "Rest"
-#                 experiment = pybamm.Experiment([f"{ChargeMethod} at {CargeRate:.2f}C for {int(time)} min"])
-#                 sim = pybamm.Simulation(model, experiment=experiment, parameter_values=params)
-#                 step_solution = sim.solve(starting_solution=solutions[-1].last_state)
-
-#                 Q = params["Nominal cell capacity [A.h]"]
-#                 DC = step_solution["Discharge capacity [A.h]"].entries[-1]
-
-#                 SoC_list = list(SoC - (step_solution["Discharge capacity [A.h]"].entries) / Q)
-#                 SoC_ = SoC - (step_solution["Discharge capacity [A.h]"].entries[-1]) / Q
-#                 SoC = SoC_
-#                 solutions += [step_solution.last_state]
-#                 SoC_imin_list.append(SoC_list)
-                 
-#             elif SoC_state < 0: # 방전 (고객에세 배터리 충전)
-#                 options = {"thermal": "lumped"}
-#                 model = pybamm.lithium_ion.SPMe(options)
-#                 params = pybamm.ParameterValues("Chen2020").copy()
-#                 init_input = {
-#                     'Number of cells connected in series to make a battery': 4164,
-#                     'Upper voltage cut-off [V]': 5,
-#                 }
-#                 params.update(init_input)
-#                 ChargeMethod = "Discharge"
-#                 CargeRate = -CargeRate
-#                 experiment = pybamm.Experiment([f"{ChargeMethod} at {CargeRate:.2f}C for {int(time)} min"])
-#                 sim = pybamm.Simulation(model, experiment=experiment, parameter_values=params)
-#                 step_solution = sim.solve(starting_solution=solutions[-1].last_state)
-
-#                 Q = params["Nominal cell capacity [A.h]"]
-#                 DC = step_solution["Discharge capacity [A.h]"].entries[-1]
-#                 # print(sum(step_solution["Discharge capacity [A.h]"].entries) / Q)
-#                 SoC_ = SoC - (step_solution["Discharge capacity [A.h]"].entries[-1]) / Q
-#                 SoC_list = list(SoC - step_solution["Discharge capacity [A.h]"].entries / Q)
-#                 SoC = SoC_
-#                 SoC_imin_list.append(SoC_list)
-#                 solutions += [step_solution.last_state]
-                
-#             elif SoC_state > 0: # 충전용 배터리를 강화학습으로 진행
-#                 env = BM(SoC,time,SoC + SoC_state)
-#                 vec_env = make_vec_env(lambda: env, n_envs=1)
-#                 model = PPO.load("batt_3")
-#                 obs = vec_env.reset()
-#                 method_SoC = []
-#                 while True:
-#                     action, _states = model.predict(obs)
-#                     observation, reward, terminated,  info  = vec_env.step(action)
-#                     method_SoC.append(observation[0][0])
-#                     # Handle the end of an episode
-#                     if terminated == True:  # Check if any environment in the vectorized env is done
-#                         break   
-#                 SoC = max(method_SoC)
-#                 SoC = min(SoC,1)
-#                 method_solution_list = env.get_last_solution()
-#                 method_SoC_imin = method_SoC[0::2]
-#                 SoC_imin_list.append(method_SoC_imin)
-#                 step_solution = method_solution_list[-2]
-
-#                 solutions += [step_solution.last_state]
-#         #=====================================================================================================================
-
-#         SoC_imin_list_1 = sum(SoC_imin_list, [])
-#         del BatterySituation
-#         return SoC_imin_list_1
-    
-#     # 원형 그래프를 통해서 표시할 데이터를 생성
-#     def make_battery_data(self):
-#         for i in range(1,6): # 배터리 개수 별로 csv를 생성
-#             BattID = i
-#             SoC_imin_list_1 = self.Simulation(BattID)
-#             # 현재 날짜와 시간 얻기
-#             now = datetime.now()
-
-#             # 년, 월, 일 추출
-#             current_year = now.year
-#             current_month = now.month
-#             current_day = now.day
-
-#             start_time = pd.Timestamp(f'{current_year}-{current_month}-{current_day} 00:00')
-#             i  = 1440
-#             date_range = [start_time + pd.Timedelta(minutes=i) for i in range(1440)]
-#             date_baterry_state = pd.DataFrame()
-#             date_baterry_state['Timestamp'] = date_range
-#             date_baterry_state['State'] = None
-#             # 리스트의 길이를 데이터프레임의 길이에 맞추기 위해 마지막 값을 반복 사용
-#             if len(SoC_imin_list_1) < len(date_baterry_state):
-#                 last_value = SoC_imin_list_1[-1]
-#                 SoC_imin_list_1_extended = SoC_imin_list_1 + [last_value] * (len(date_baterry_state) - len(SoC_imin_list_1))
-#             else:
-#                 SoC_imin_list_1_extended = SoC_imin_list_1[:len(date_baterry_state)]
-
-#             date_baterry_state['state'] = SoC_imin_list_1_extended
-#             date_baterry_state.to_csv(f'./data/battery_{BattID}.csv', index=False)
-
-
-# # #29 주석
-# # app = Flask(__name__)
-
-# # 5개의 CSV 파일 로드
-# battery_dfs = [pd.read_csv(f'./data/battery_{i}.csv', parse_dates=['Timestamp']) for i in range(1, 6)]
-# battery_indices = [0] * len(battery_dfs)  # 각 배터리의 현재 인덱스를 저장하는 리스트
-
-# def get_battery_state(battery_index):
-#     df = battery_dfs[battery_index]
-#     index = battery_indices[battery_index]
-#     if index >= len(df):
-#         index = 0  # 인덱스가 데이터프레임의 길이를 초과하면 다시 처음부터 시작
-#     state = df.iloc[index]['state']
-#     battery_indices[battery_index] = index + 1  # 다음 호출 시 사용할 인덱스를 업데이트
-#     return state
-
-# @app.route('/battery/<int:battery_index>')
-# def battery_state(battery_index):
-#     if battery_index < 0 or battery_index >= len(battery_dfs):
-#         return jsonify({"error": "Invalid battery index"}), 404
-#     state = get_battery_state(battery_index)
-#     return jsonify([state])
+    return figure_1, figure_2, figure_3, figure_4
 
 # //#29 배터리 강화학습 코드 통합 - 여기까지
 #===================================================================================================
