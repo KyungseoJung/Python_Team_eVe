@@ -9,7 +9,7 @@
 # from flask import jsonify, request # //#28 수리모형 코드 통합을 위한 import
 
 import pandas as pd
-import eve_0523_test1 # //#28 수리모형 코드 통합 (Import 수리모형 함수를 포함한 Python file )
+import eve_0528_test # //#28 수리모형 코드 통합 (Import 수리모형 함수를 포함한 Python file )
 
 import pandas as pd
 from datetime import datetime
@@ -319,7 +319,7 @@ def calculate_path():
         # import eve_0521_test
     try:
         # //#28 내가 불러올 데이터
-        datafile = "C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/orderData/S_03.txt"
+        datafile = "C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/orderData/SOP_01.txt"
 
         # //#28 내가 지정하는 경로 (파일 저장)
         # //#28 fix: pickle_path 코드 수정 - 주석 처리
@@ -328,7 +328,7 @@ def calculate_path():
         truck_csv_path = "C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/static/"
 
         # eve_0522_test3.solve(datafile, pickle_path, battery_csv_path, truck_csv_path) # //#28 fix: pickle_path 코드 수정 - 주석 처리 
-        eve_0523_test1.solve(datafile, battery_csv_path, truck_csv_path)
+        eve_0528_test.solve(datafile, battery_csv_path, truck_csv_path)
 
         # Assuming there's a function in eve_0522_test.py to calculate the path and save a CSV
         # result = eve_0522_test.calculate_and_save()
