@@ -33,10 +33,10 @@ def client_page(driver_id):
         abort(404)  # 존재하지 않는 client_id의 경우 404 에러 페이지를 반환
 
 
-@app.route('/')
-def index():
-    # return render_template('index.html')
-    return render_template('screen_Driver.html')
+# @app.route('/')
+# def index():
+#     # return render_template('index.html')
+#     return render_template('screen_Driver.html')
 
 if __name__ == '__main__':
     app.run(debug=True)
