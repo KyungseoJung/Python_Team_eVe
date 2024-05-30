@@ -4,6 +4,7 @@
 # 고민: 다른 URL로 연결만 하면 되나 or 다른 port 번호를 가져야 하나 -> 그냥 다른 url로 연결하면 될 듯
 #25-2 고객 화면 - "서비스 시작 시간"에 실시간 RabbitMQ로 "배달완료"메시지 왔을 때 시간 넣기,
   "예상 서비스 완료 시간"에 deliveries.csv에 있는 time 값 넣기(단, 해당 client_id에 해당하면서 delivery_type이 "배달"일 때 행에 해당하는 time값)
+#34 고객이 보는 지도 - 고객 주문 위치 받아서 마커 표시 - 고객 주문 위치 중심으로 지도 고정
 
 '''
 from flask import Flask, render_template, abort
@@ -34,7 +35,7 @@ def client_page(client_id):
     serviceComplete_info = deliveries[(deliveries['client_id'] == client_id) & (deliveries['delivery_type'] == '수거')]
 
     #23 fix: 각 고객은 자신에게 할당된 Driver위치가 보이도록
-    serviceStart_info = deliveries[(deliveries['client_id'] == client_id) & (deliveries['delivery_type'] == '배달')]
+    serviceStart_info = deliveries[(deliveries['client_id'] == client_id) & (deliveries['delivery_type'] == '배달')]    
 
     # 위에서 찾은 serviceComplete_info에 해당하는 데이터가 존재한다면, 아래 코드 실행
     if not serviceComplete_info.empty:
@@ -44,9 +45,13 @@ def client_page(client_id):
         if not serviceStart_info.empty:
             serviceStart_driver = serviceStart_info.iloc[0]['driver_id']
 
+            #34 고객이 보는 지도 - 고객 주문 위치 받아서 마커 표시 - 고객 주문 위치 중심으로 지도 고정
+            servicePos_Lat = serviceStart_info.iloc[0]['latitude']
+            servicePos_Lng = serviceStart_info.iloc[0]['longitude']
+
             # 'render_template'함수를 이용해 'client_id'와 'serviceComplete_time' 데이터를 HTML 파일로 전달하여, 페이지에서 사용할 수 있도록 함.
-            #23 fix: 각 고객은 자신에게 할당된 Driver위치가 보이도록
-            return render_template('screen_Client.html', clientId=client_id, serviceCompleteTime=serviceComplete_time, serviceStartDriver = serviceStart_driver)     
+            #23 fix: 각 고객은 자신에게 할당된 Driver위치가 보이도록 // #34
+            return render_template('screen_Client.html', clientId=client_id, serviceCompleteTime=serviceComplete_time, serviceStartDriver = serviceStart_driver, servicePosLat=servicePos_Lat, servicePosLng = servicePos_Lng)     
     else:
         abort(404)  # 특정 "client_id"에서 "delivery_type"의 값이 '배달'이 없는 경우 에러 화면 표시
 

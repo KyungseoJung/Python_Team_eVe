@@ -13,6 +13,8 @@
 
 #20 factor fix: RabbitMQ 구조화 - Administrator의 subscribe 처럼
 
+#34 고객이 보는 지도 - 고객 주문 위치 받아서 마커 표시 - 고객 주문 위치 중심으로 지도 고정
+
 -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -179,6 +181,15 @@
         var marker; // #24 지도 표시
         var serviceStartDriver = "{{ serviceStartDriver }}"; // #23 fix
 
+        // var servicePosLat = "{{ servicePosLat }}"; // #34
+        // var servicePosLng = "{{ servicePosLng }}"; // #34
+        var servicePosLat = parseFloat("{{ servicePosLat }}"); // #34
+        var servicePosLng = parseFloat("{{ servicePosLng }}"); // #34
+        var ClientOrderLocation = new Tmapv3.LatLng(
+          servicePosLat,
+          servicePosLng
+        ); // #34 고객의 주문 위치 데이터
+
         var clientId = "{{ clientId }}"; //#21 Jinja2 템플릿 구문을 사용하여 변수 값을 직접 받아옵니다.
         console.log("//#22 Flask로부터 전달받은 clientId 값: " + clientId);
         // #21 (취소된 방법) URL에서 clientId 값을 가져온다.
@@ -308,26 +319,33 @@
 
         // #24 "Driver의 위치"에 대해 RabbitMQ로부터 메시지 수신 - 지도에 표시
         function updateMap(latitude, longitude) {
-          var userLocation = new Tmapv3.LatLng(latitude, longitude);
+          var driverLocation = new Tmapv3.LatLng(latitude, longitude);
           if (marker) {
             marker.setMap(null);
           }
           marker = new Tmapv3.Marker({
             icon: "https://cdn-icons-png.flaticon.com/128/14975/14975104.png",
             label: "Driver",
-            position: userLocation,
+            position: driverLocation,
             map: map,
           });
-          map.setCenter(userLocation);
+          map.setCenter(ClientOrderLocation);
         }
 
         //#24 T-Map 시작 & 웹소켓 연결
         function initTmap() {
           map = new Tmapv3.Map("map_div", {
-            center: new Tmapv3.LatLng(37.5665, 126.978),
+            center: ClientOrderLocation,
             width: "100%",
             height: "100%", // 전체 화면에 맞게 조정
             zoom: 15,
+          });
+
+          new Tmapv3.Marker({
+            icon: "https://cdn-icons-png.flaticon.com/128/2175/2175400.png",
+            label: "주문 위치",
+            position: ClientOrderLocation,
+            map: map,
           });
         }
 
