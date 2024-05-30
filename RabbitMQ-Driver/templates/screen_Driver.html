@@ -259,13 +259,13 @@
         function sendStateToClientRabbitMQ(message) {
           // #21 Driver에서 각각 다른 주소로 메시지 송신 (deliveries.csv의 client_id를 기반으로)
           var clientId = deliveries[currentIndex].client_id; // 현재 배달의 고객 ID를 가져옵니다.
-          var topic = "/topic/serviceState" + clientId; // 고객 ID에 따라 토픽을 동적으로 결정합니다.
-          var completeTopic = "/topic/serviceComplete"; //#30-3 "수거완료"(즉, 서비스 완료)된 데이터에 대해서 고객 ID를 데이터로 보내기
+          var serviceTopicToClient = "/topic/serviceState" + clientId; // 고객 ID에 따라 토픽을 동적으로 결정합니다.
+          var serviceTopicToAdmin = "/topic/serviceComplete"; //#30-3 관리자로 메시지 송신- "수거완료"(즉, 서비스 완료)된 데이터에 대해서 고객 ID를 데이터로 보내기
 
           if (stompClient && stompClient.connected) {
-            stompClient.send(topic, {}, message);
+            stompClient.send(serviceTopicToClient, {}, message);
             if (message == "수거완료") {
-              stompClient.send(completeTopic, {}, clientId); // #30-3
+              stompClient.send(serviceTopicToAdmin, {}, clientId); // #30-3
             }
           } else {
             console.log(
@@ -274,9 +274,9 @@
             connectToRabbitMQ();
             setTimeout(function () {
               if (stompClient.connected) {
-                stompClient.send(topic, {}, message);
+                stompClient.send(serviceTopicToClient, {}, message);
                 if (message == "수거완료") {
-                  stompClient.send(completeTopic, {}, clientId); // #30-3
+                  stompClient.send(serviceTopicToAdmin, {}, clientId); // #30-3
                 }
               } else {
                 console.log("Failed to reconnect to RabbitMQ.");
@@ -319,10 +319,10 @@
             longitude: longitude,
           });
 
-          var adminStateTopic = "/topic/driverStatus"; // #33-2 배달기사의 상태를 Administrator.html 로 전송해보자
+          var stateTopicToAdmin = "/topic/driverStatus"; // #33-2 배달기사의 상태를 Administrator.html 로 전송해보자
 
           if (stompClient && stompClient.connected) {
-            stompClient.send(adminStateTopic, {}, driverStateMessage);
+            stompClient.send(stateTopicToAdmin, {}, driverStateMessage);
             console.log(
               "//#33-2 Driver의 ID, 상태, 다음 도착지 보냄: ",
               driverStateMessage
@@ -334,7 +334,7 @@
             connectToRabbitMQ();
             setTimeout(function () {
               if (stompClient.connected) {
-                stompClient.send(adminStateTopic, {}, driverStateMessage);
+                stompClient.send(stateTopicToAdmin, {}, driverStateMessage);
               } else {
                 console.log("Failed to reconnect to RabbitMQ.");
               }
@@ -371,11 +371,11 @@
         // #33 관리자 페이지로 각 Driver의 위치 데이터 보낼 목적 - RabbitMQ 데이터 송수신
         function sendPosToAdministratorRabbitMQ(lat, lng) {
           var locationData = JSON.stringify({ latitude: lat, longitude: lng });
-          var publishTopic = "/topic/driverLocation" + driverId;
+          var locationTopicToAdmin = "/topic/driverLocation" + driverId;
           if (stompClient.connected) {
-            stompClient.send(publishTopic, {}, locationData);
+            stompClient.send(locationTopicToAdmin, {}, locationData);
             console.log("Sent location data to RabbitMQ:", locationData);
-            console.log("//#33 publishTopic: " + publishTopic);
+            console.log("//#33 locationTopicToAdmin: " + locationTopicToAdmin);
           } else {
             console.log(
               "WebSocker이 연결되어 있지 않음. Attempting to reconnect..."
@@ -383,7 +383,7 @@
             connectToRabbitMQ();
             setTimeout(function () {
               if (stompClient.connected) {
-                stompClient.send(publishTopic, {}, locationData);
+                stompClient.send(locationTopicToAdmin, {}, locationData);
                 console.log(
                   "Sent location data to RabbitMQ after reconnecting:",
                   locationData
