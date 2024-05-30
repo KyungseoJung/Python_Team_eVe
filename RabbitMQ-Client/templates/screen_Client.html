@@ -177,6 +177,7 @@
         var stompClient;
         var map; // #24 지도 표시
         var marker; // #24 지도 표시
+        var serviceStartDriver = "{{ serviceStartDriver }}"; // #23 fix
 
         var clientId = "{{ clientId }}"; //#21 Jinja2 템플릿 구문을 사용하여 변수 값을 직접 받아옵니다.
         console.log("//#22 Flask로부터 전달받은 clientId 값: " + clientId);
