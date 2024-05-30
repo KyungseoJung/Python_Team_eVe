@@ -13,7 +13,7 @@ app = Flask(__name__)
 
 #22 CSV 파일 로드해서 데이터를 읽어오는 함수
 def load_deliveries():
-    return pd.read_csv("C:/GitStudy/Python_Team_eVe/RabbitMQ-Driver/static/deliveries.csv")
+    return pd.read_csv("C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/static/deliveries.csv")
 
 @app.route('/client/<int:client_id>')
 def client_page(client_id):    
@@ -31,15 +31,25 @@ def client_page(client_id):
 
     #25-2 예정 서비스 완료 시간 (=수거 완료 시간) 표시하기 - 기존 #22 코드를 여기에 병합
     # 특정 client_id에 해당하고, delivery_type이 "수거"인 행에 해당하는 time 가져오기
-    delivery_info = deliveries[(deliveries['client_id'] == client_id) & (deliveries['delivery_type'] == '수거')]
+    serviceComplete_info = deliveries[(deliveries['client_id'] == client_id) & (deliveries['delivery_type'] == '수거')]
 
-    # 위에서 찾은 delivery_info에 해당하는 데이터가 존재한다면, 아래 코드 실행
-    if not delivery_info.empty:
-        delivery_time = delivery_info.iloc[0]['time']  # 처음으로 일치하는 값이 우리가 필요한 데이터일 테니까. (물론, 중복된 데이터가 존재해서도 안 됨.)
-        # 'render_template'함수를 이용해 'client_id'와 'delivery_time' 데이터를 HTML 파일로 전달하여, 페이지에서 사용할 수 있도록 함.
-        return render_template('screen_Client.html', clientId=client_id, deliveryTime=delivery_time)     
+    #23 fix: 각 고객은 자신에게 할당된 Driver위치가 보이도록
+    serviceStart_info = deliveries[(deliveries['client_id'] == client_id) & (deliveries['delivery_type'] == '배달')]
+
+    # 위에서 찾은 serviceComplete_info에 해당하는 데이터가 존재한다면, 아래 코드 실행
+    if not serviceComplete_info.empty:
+        serviceComplete_time = serviceComplete_info.iloc[0]['time']  # 처음으로 일치하는 값이 우리가 필요한 데이터일 테니까. (물론, 중복된 데이터가 존재해서도 안 됨.)
+        
+        #23 fix: 각 고객은 자신에게 할당된 Driver위치가 보이도록
+        if not serviceStart_info.empty:
+            serviceStart_driver = serviceStart_info.iloc[0]['driver_id']
+
+            # 'render_template'함수를 이용해 'client_id'와 'serviceComplete_time' 데이터를 HTML 파일로 전달하여, 페이지에서 사용할 수 있도록 함.
+            #23 fix: 각 고객은 자신에게 할당된 Driver위치가 보이도록
+            return render_template('screen_Client.html', clientId=client_id, serviceCompleteTime=serviceComplete_time, serviceStartDriver = serviceStart_driver)     
     else:
         abort(404)  # 특정 "client_id"에서 "delivery_type"의 값이 '배달'이 없는 경우 에러 화면 표시
+
 
 if __name__ == "__main__":
     app.run(port=5002,debug=True)

@@ -212,7 +212,8 @@
 
         // #24 "Driver의 위치"에 대해 Subscriber 입장 (Publisher - Subscriber 중)
         function subscribeDriverPos() {
-          var subscribeTopic = "/topic/locationUpdate"; // 수정된 구독 주제
+          // #23 fix: 각 고객은 자신에게 할당된 Driver위치가 보이도록
+          var subscribeTopic = "/topic/locationUpdate" + serviceStartDriver; // 수정된 구독 주제
 
           stompClient.subscribe(subscribeTopic, function (message) {
             var locationData = JSON.parse(message.body);
@@ -273,9 +274,9 @@
               document.getElementById("service_start_time").innerText =
                 deliveryCompleteTime;
               // #25-2 동적으로 deliveries.csv 파일에서 해당 "고객"의 "수거" 시간을 찾아서 "expected_service_end_time"에 입력하기
-              // app_Client.py로부터 넘겨받은 deliveryTime 표시
+              // app_Client.py로부터 넘겨받은 serviceCompleteTime 표시 (관리자 파일의 delivereis.csv에서 time 데이터만 가져오기)
               document.getElementById("expected_service_end_time").innerText =
-                "{{ deliveryTime }}";
+                "{{ serviceCompleteTime }}";
 
               break;
 

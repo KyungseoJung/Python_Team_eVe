@@ -229,7 +229,7 @@
             // Assuming the CSV file has headers that match the properties used below
             let results = Papa.parse(csvString, { header: true });
             // deliveries = results.data;
-            //#33-4 각각의 Driver페이지에 driver_id에 맞게 자신에게 할당된 업무만 나타나도록 
+            //#33-4 각각의 Driver페이지에 driver_id에 맞게 자신에게 할당된 업무만 나타나도록
             deliveries = results.data.filter(
               (delivery) => delivery.driver_id === driverId
             );
@@ -295,7 +295,7 @@
           // ===================================
           // if (currentIndex >= deliveries.length - 1) {
           if (currentIndex >= deliveries.length) {
-            //#33-4 deliveries가 이제는 각 driverId에 해당하는 업무만 담고 있으니까 if문 범위 수정 
+            //#33-4 deliveries가 이제는 각 driverId에 해당하는 업무만 담고 있으니까 if문 범위 수정
 
             // 모든 업무 완료
             sendStateToAdminRabbitMQ(driverId, "업무 완료", 0, 0);
@@ -345,8 +345,9 @@
         //#23 Driver의 실시간 위치를 RabbitMQ로 송신 및 지도로 표시
         function sendPosToClientRabbitMQ(lat, lng) {
           var locationData = JSON.stringify({ latitude: lat, longitude: lng });
+          var locationTopicToClient = "/topic/locationUpdate" + driverId;
           if (stompClient.connected) {
-            stompClient.send("/topic/locationUpdate", {}, locationData);
+            stompClient.send(locationTopicToClient, {}, locationData);
             console.log("Sent location data to RabbitMQ:", locationData);
           } else {
             console.log(
@@ -355,7 +356,7 @@
             connectToRabbitMQ();
             setTimeout(function () {
               if (stompClient.connected) {
-                stompClient.send("/topic/locationUpdate", {}, locationData);
+                stompClient.send(locationTopicToClient, {}, locationData);
                 console.log(
                   "Sent location data to RabbitMQ after reconnecting:",
                   locationData
@@ -477,13 +478,13 @@
         function updateDeliveryInfo() {
           console.log("//#17-5 updateDeliveryInfo 함수 실행");
           if (deliveries.length === 0) {
-            alert("//#33-4 이 Driver에게는 어떤 배달도 할당되지 않음!"); 
+            alert("//#33-4 이 Driver에게는 어떤 배달도 할당되지 않음!");
             return;
           }
           //========== #17-3 모든 배달 정보를 마치면, 팝업창과 함께 두 버튼 모두 비활성화
           // if (currentIndex >= deliveries.length - 1) {
           if (currentIndex >= deliveries.length) {
-            //#33-4 deliveries가 이제는 각 driverId에 해당하는 업무만 담고 있으니까 if문 범위 수정 
+            //#33-4 deliveries가 이제는 각 driverId에 해당하는 업무만 담고 있으니까 if문 범위 수정
             // 두 버튼 모두 비활성화
             deliveryCompleteBtn.disabled = true;
             pickupCompleteBtn.disabled = true;
@@ -545,7 +546,7 @@
 
           // if (currentIndex < deliveries.length - 1) {
           if (currentIndex < deliveries.length) {
-            //#33-4 deliveries가 이제는 각 driverId에 해당하는 업무만 담고 있으니까 if문 범위 수정 
+            //#33-4 deliveries가 이제는 각 driverId에 해당하는 업무만 담고 있으니까 if문 범위 수정
 
             currentIndex++; // 다음 데이터 (delivery_type, 위치 데이터) 표시
             updateDeliveryInfo();
@@ -571,7 +572,7 @@
 
           // if (currentIndex < deliveries.length - 1) {
           if (currentIndex < deliveries.length) {
-            //#33-4 deliveries가 이제는 각 driverId에 해당하는 업무만 담고 있으니까 if문 범위 수정 
+            //#33-4 deliveries가 이제는 각 driverId에 해당하는 업무만 담고 있으니까 if문 범위 수정
 
             currentIndex++; // 다음 데이터 (delivery_type, 위치 데이터) 표시
             updateDeliveryInfo();
