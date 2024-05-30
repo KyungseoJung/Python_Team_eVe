@@ -11,6 +11,8 @@
 #25-2 고객 화면 - "서비스 시작 시간"에 실시간 RabbitMQ로 "배달완료"메시지 왔을 때 시간 넣기,
   "예상 서비스 완료 시간"에 deliveries.csv에 있는 time 값 넣기(단, 해당 client_id에 해당하면서 delivery_type이 "배달"일 때 행에 해당하는 time값)
 
+#20 factor fix: RabbitMQ 구조화 - Administrator의 subscribe 처럼
+
 -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -187,49 +189,46 @@
         // );
         // console.log("//#22 url로부터 얻은 clientId = " + clientId);
 
-        // #24 "Driver의 위치"에 대해 Subscriber 입장 (Publisher - Subscriber 중)
-        function connectAndSubscribePos() {
+        // #20 factor fix: RabbitMQ 구조화
+        function connectToRabbitMQ() {
           var ws = new WebSocket("ws://127.0.0.1:15674/ws");
           stompClient = Stomp.over(ws);
           stompClient.connect(
             "guest",
             "guest",
             function (frame) {
-              console.log("Connected: " + frame);
-              var subscribeTopic = "/topic/locationUpdate"; // 수정된 구독 주제
-              stompClient.subscribe(subscribeTopic, function (message) {
-                var locationData = JSON.parse(message.body);
-                updateMap(locationData.latitude, locationData.longitude);
-              });
+              console.log("//#30-3 Connected: " + frame);
+
+              // subscribe 함수 - "Driver의 위치"에 대해 받기 (Driver 측에서 10초마다 송신됨)
+              subscribeDriverPos();
+              // subscribe 함수 - Driver로부터 서비스 상태에 대해 받기 (Driver 측에서 버튼 누르면 데이터 송신됨)
+              subscribeState();
             },
             function (error) {
-              console.log("STOMP error: " + error);
+              console.log("WebSocket error: " + error);
             }
           );
         }
 
+        // #24 "Driver의 위치"에 대해 Subscriber 입장 (Publisher - Subscriber 중)
+        function subscribeDriverPos() {
+          var subscribeTopic = "/topic/locationUpdate"; // 수정된 구독 주제
+
+          stompClient.subscribe(subscribeTopic, function (message) {
+            var locationData = JSON.parse(message.body);
+            updateMap(locationData.latitude, locationData.longitude);
+          });
+        }
+
         // #20 "서비스 상태"에 대해 Subscriber 입장 (Publisher - Subscriber 중)
-        function connectAndSubscribeState() {
-          var ws = new WebSocket("ws://127.0.0.1:15674/ws"); // 이 주소는 RabbitMQ 서버의 웹소켓 주소임.
-          stompClient = Stomp.over(ws);
-          stompClient.connect(
-            "guest",
-            "guest",
-            function (frame) {
-              console.log("Connected: " + frame);
-              // #21 고객id별로 다른 주소의 RabbitMQ에 연결되도록
-              var subscribeTopic = "/topic/serviceState" + clientId;
-              stompClient.subscribe(subscribeTopic, function (message) {
-                // handleServiceStateMessage(JSON.parse(message.body).text);
-                // #20 메시지 본문이 JSON 형식이 아님. JSON.parse를 사용하여 문자열을 파싱하려 했으나, RabbitMQ에서 전송된 메시지는 일반 텍스트 문자열임.
-                // 따라서, JSON으로 파싱하는 대신, 직접 문자열을 사용하여 조건 확인
-                handleServiceStateMessage(message.body);
-              });
-            },
-            function (error) {
-              console.log("STOMP error: " + error);
-            }
-          );
+        function subscribeState() {
+          var subscribeTopic = "/topic/serviceState" + clientId;
+          stompClient.subscribe(subscribeTopic, function (message) {
+            // handleServiceStateMessage(JSON.parse(message.body).text);
+            // #20 메시지 본문이 JSON 형식이 아님. JSON.parse를 사용하여 문자열을 파싱하려 했으나, RabbitMQ에서 전송된 메시지는 일반 텍스트 문자열임.
+            // 따라서, JSON으로 파싱하는 대신, 직접 문자열을 사용하여 조건 확인
+            handleServiceStateMessage(message.body);
+          });
         }
 
         // #20 RabbitMQ로부터 수신받은 메시지("배달완료" or "수거완료")를 기반으로 화면 표시
@@ -331,8 +330,10 @@
         }
 
         initTmap(); // #24
-        connectAndSubscribeState();
-        connectAndSubscribePos(); // #24
+
+        connectToRabbitMQ(); // #20 factor fix
+        // connectAndSubscribeState();
+        // connectAndSubscribePos(); // #24
       });
     </script>
   </body>
