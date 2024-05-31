@@ -1,0 +1,485 @@
+<!-- //#23 T-Map appkey = 5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu -->
+
+<!-- 
+    //#36 고객 화면 - 예약 화면 추가
+ -->
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>예약 페이지</title>
+    <style>
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        font-family: Arial, sans-serif;
+      }
+      .map-container {
+        position: relative;
+        height: 100%;
+      }
+      .map {
+        width: 100%;
+        height: 100%;
+      }
+      .input-container {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        padding: 10px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      .input-container label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #555;
+      }
+      .input-container input,
+      .input-container button {
+        width: 100%;
+        padding: 10px;
+        box-sizing: border-box;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 1em;
+      }
+      .input-container button {
+        background-color: #007bff;
+        color: white;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+      .input-container button:hover {
+        background-color: #0056b3;
+      }
+      .info-container {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 20px;
+        background-color: white;
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+        box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease-in-out;
+      }
+      .info-container.hidden {
+        transform: translateY(100%);
+      }
+      .toggle-button {
+        position: absolute;
+        top: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #1a7416;
+        color: #fff;
+        border: none;
+        border-radius: 20px;
+        padding: 10px 40px;
+        cursor: pointer;
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+      }
+      .info-container h2 {
+        margin-top: 0;
+        font-size: 1.2em;
+        color: #333;
+        border-bottom: 2px solid #1a7416;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+      }
+      .info-container .input-group {
+        margin-bottom: 20px;
+      }
+      .info-container .input-group input {
+        width: 100%;
+        padding: 10px;
+        box-sizing: border-box;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 1em;
+      }
+      .info-container .input-group input[readonly] {
+        background-color: #f9f9f9;
+      }
+      .btn {
+        display: block;
+        width: 100%;
+        padding: 15px;
+        background-color: #1a7416;
+        color: #fff;
+        text-align: center;
+        border: none;
+        border-radius: 5px;
+        font-size: 1.1em;
+        cursor: pointer;
+      }
+      .btn:hover {
+        background-color: #0d3b0b;
+      }
+      .popup {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        justify-content: center;
+        align-items: center;
+      }
+      .popup-content {
+        background: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        width: 80%;
+        max-width: 400px;
+        text-align: center;
+      }
+      .popup-content h3 {
+        margin-top: 0;
+        margin-bottom: 20px;
+      }
+      .popup-content .btn-close {
+        background-color: #ccc;
+        margin-top: 10px;
+      }
+      .list-item {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        cursor: pointer;
+      }
+      .list-item:hover {
+        background-color: #f1f1f1;
+      }
+      .selected {
+        background-color: #007bff;
+        color: #fff;
+      }
+      .selected-time-range {
+        background-color: #4f7f4c;
+        color: #fff;
+      }
+      .selected-time-part {
+        background-color: #4f7f4c;
+        color: #fff;
+      }
+
+      .time-scroll-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .time-scroll {
+        height: 100px;
+        overflow-y: scroll;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        width: 100px;
+      }
+      .time-item {
+        padding: 10px;
+        cursor: pointer;
+      }
+      .time-item:hover {
+        background-color: #f1f1f1;
+      }
+    </style>
+    <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu"></script>
+  </head>
+  <body>
+    <div class="map-container">
+      <div id="map_div" class="map"></div>
+      <div class="input-container">
+        <label for="location">충전 차량 위치</label>
+        <input type="text" id="location" placeholder="도로명 주소 입력" />
+        <button onclick="searchLocation()">검색</button>
+      </div>
+      <div class="info-container hidden" id="info-container">
+        <button class="toggle-button" id="toggle-button" onclick="toggleInfo()">
+          펼치기
+        </button>
+        <div id="info-content">
+          <h2>상세 주소</h2>
+          <div class="input-group">
+            <!-- <label for="detail-address">상세 주소</label> -->
+            <input
+              type="text"
+              id="detail-address"
+              placeholder="상세 주소를 입력하세요"
+            />
+          </div>
+
+          <h2>차량 정보</h2>
+          <div class="input-group">
+            <!-- <label for="car-number">차량 번호</label> -->
+            <input
+              type="text"
+              id="car-number"
+              placeholder="차량 번호를 입력하세요"
+            />
+          </div>
+
+          <h2>충전 상품 선택</h2>
+          <div class="input-group">
+            <input
+              type="text"
+              id="product"
+              placeholder="충전 상품을 선택하세요"
+              readonly
+              onclick="openProductPopup()"
+            />
+          </div>
+
+          <h2>예약 선택</h2>
+          <div class="input-group">
+            <label for="reservation-time"
+              >아래 시간동안 모든 서비스가 완료됩니다</label
+            >
+            <input
+              type="text"
+              id="reservation-time"
+              placeholder="서비스 시작 시간을 선택하세요"
+              readonly
+              onclick="openTimePopup()"
+            />
+          </div>
+
+          <button class="btn">예약 완료하기</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="popup" id="product-popup">
+      <div class="popup-content">
+        <h3>충전 상품 선택</h3>
+        <div class="list-item" onclick="selectProduct('20 Kwh', '10,700원')">
+          20 Kwh - 예상 10,700원
+        </div>
+        <div class="list-item" onclick="selectProduct('30 Kwh', '15,900원')">
+          30 Kwh - 예상 15,900원
+        </div>
+        <div class="list-item" onclick="selectProduct('40 Kwh', '20,900원')">
+          40 Kwh - 예상 20,900원
+        </div>
+        <div class="list-item" onclick="selectProduct('50 Kwh', '25,900원')">
+          50 Kwh - 예상 25,900원
+        </div>
+        <button class="btn btn-close" onclick="closeProductPopup()">
+          닫기
+        </button>
+      </div>
+    </div>
+
+    <div class="popup" id="time-popup">
+      <div class="popup-content">
+        <h3>서비스 시작 시간 선택</h3>
+        <div
+          class="list-item"
+          id="range-1"
+          onclick="selectTimeRange('00:00 ~ 06:59', 'range-1')"
+        >
+          00:00 ~ 07:00
+        </div>
+        <div
+          class="list-item"
+          id="range-2"
+          onclick="selectTimeRange('08:00 ~ 14:59', 'range-2')"
+        >
+          08:00 ~ 15:00
+        </div>
+        <div
+          class="list-item"
+          id="range-3"
+          onclick="selectTimeRange('16:00 ~ 22:59', 'range-3')"
+        >
+          16:00 ~ 23:00
+        </div>
+        <div class="time-scroll-container">
+          <div class="time-scroll" id="hour-scroll"></div>
+          <div class="time-scroll" id="minute-scroll"></div>
+        </div>
+        <button class="btn" onclick="confirmTime()">확인</button>
+        <button class="btn btn-close" onclick="closeTimePopup()">닫기</button>
+      </div>
+    </div>
+
+    <script>
+      let map, marker;
+      let selectedHour = null;
+      let selectedMinute = null;
+      let reservationTimeInMinutes = null;
+
+      function initTmap() {
+        map = new Tmapv2.Map("map_div", {
+          center: new Tmapv2.LatLng(37.5666805, 126.9784147),
+          width: "100%",
+          height: "100%",
+          zoom: 15,
+        });
+      }
+
+      function searchLocation() {
+        const address = document.getElementById("location").value;
+        if (address) {
+          fetch(
+            `https://apis.openapi.sk.com/tmap/geo/fullAddrGeo?version=1&format=json&callback=result&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu&coordType=WGS84GEO&fullAddr=${encodeURIComponent(
+              address
+            )}`
+          )
+            .then((response) => response.json())
+            .then((data) => {
+              if (
+                data.coordinateInfo &&
+                data.coordinateInfo.coordinate.length > 0
+              ) {
+                const info = data.coordinateInfo.coordinate[0];
+                const lat = info.newLat;
+                const lon = info.newLon;
+                const detailAddress = info.fullAddress; // 상세 주소 받아오기
+                if (marker) {
+                  marker.setMap(null);
+                }
+                marker = new Tmapv2.Marker({
+                  position: new Tmapv2.LatLng(lat, lon),
+                  map: map,
+                });
+                map.setCenter(new Tmapv2.LatLng(lat, lon));
+                document.getElementById("detail-address").value = detailAddress; // 상세 주소 입력
+              } else {
+                alert("주소를 찾을 수 없습니다.");
+              }
+            });
+        }
+      }
+
+      function openProductPopup() {
+        document.getElementById("product-popup").style.display = "flex";
+      }
+
+      function closeProductPopup() {
+        document.getElementById("product-popup").style.display = "none";
+      }
+
+      function selectProduct(product, price) {
+        document.getElementById("product").value = `${product} - 예상 ${price}`;
+        closeProductPopup();
+      }
+
+      function openTimePopup() {
+        document.getElementById("time-popup").style.display = "flex";
+        document.getElementById("hour-scroll").innerHTML = "";
+        document.getElementById("minute-scroll").innerHTML = ""; // Clear previous time items
+      }
+
+      function closeTimePopup() {
+        document.getElementById("time-popup").style.display = "none";
+      }
+
+      function selectTimeRange(range, id) {
+        const ranges = ["range-1", "range-2", "range-3"];
+        ranges.forEach((r) => {
+          document.getElementById(r).classList.remove("selected-time-range");
+        });
+        document.getElementById(id).classList.add("selected-time-range");
+
+        const hourScroll = document.getElementById("hour-scroll");
+        const minuteScroll = document.getElementById("minute-scroll");
+        hourScroll.innerHTML = "";
+        minuteScroll.innerHTML = "";
+
+        const [start, end] = range
+          .split(" ~ ")
+          .map((time) => time.split(":").map(Number));
+        let startHour = start[0];
+        let endHour = end[0];
+
+        for (let h = startHour; h <= endHour; h++) {
+          const hourItem = document.createElement("div");
+          hourItem.className = "time-item";
+          hourItem.textContent = String(h).padStart(2, "0");
+          hourItem.onclick = () =>
+            selectTimePart("hour", String(h).padStart(2, "0"), hourItem);
+          hourScroll.appendChild(hourItem);
+        }
+
+        for (let m = 0; m < 60; m++) {
+          const minuteItem = document.createElement("div");
+          minuteItem.className = "time-item";
+          minuteItem.textContent = String(m).padStart(2, "0");
+          minuteItem.onclick = () =>
+            selectTimePart("minute", String(m).padStart(2, "0"), minuteItem);
+          minuteScroll.appendChild(minuteItem);
+        }
+      }
+
+      function selectTimePart(part, value, element) {
+        if (part === "hour") {
+          selectedHour = value;
+          document
+            .querySelectorAll("#hour-scroll .time-item")
+            .forEach((item) => {
+              item.classList.remove("selected-time-part");
+            });
+          element.classList.add("selected-time-part");
+        } else if (part === "minute") {
+          selectedMinute = value;
+          document
+            .querySelectorAll("#minute-scroll .time-item")
+            .forEach((item) => {
+              item.classList.remove("selected-time-part");
+            });
+          element.classList.add("selected-time-part");
+        }
+        updateTimeSelection();
+      }
+
+      function updateTimeSelection() {
+        if (selectedHour !== null && selectedMinute !== null) {
+          document.getElementById(
+            "reservation-time"
+          ).value = `${selectedHour}:${selectedMinute} ~ ${
+            parseInt(selectedHour) + 1
+          }:${selectedMinute}`;
+          reservationTimeInMinutes =
+            parseInt(selectedHour) * 60 + parseInt(selectedMinute);
+          console.log(`예약 시간: ${reservationTimeInMinutes}분`);
+        }
+      }
+
+      function confirmTime() {
+        if (reservationTimeInMinutes !== null) {
+          console.log(`확정된 예약 시간: ${reservationTimeInMinutes}분`);
+        }
+        closeTimePopup();
+      }
+
+      function toggleInfo() {
+        const infoContainer = document.getElementById("info-container");
+        const toggleButton = document.getElementById("toggle-button");
+        if (infoContainer.classList.contains("hidden")) {
+          infoContainer.classList.remove("hidden");
+          toggleButton.textContent = "접기";
+        } else {
+          infoContainer.classList.add("hidden");
+          toggleButton.textContent = "펼치기";
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        initTmap();
+      });
+    </script>
+  </body>
+</html>
