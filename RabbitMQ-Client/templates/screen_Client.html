@@ -15,6 +15,7 @@
 
 #34 고객이 보는 지도 - 고객 주문 위치 받아서 마커 표시 - 고객 주문 위치 중심으로 지도 고정
 
+#35 고객 화면과 Driver 화면에서 코드 추가 - 모바일 웹 화면으로 확인할 때, 페이지 연결 및 구조가 적절히 보이도록
 -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -29,6 +30,45 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 
     <style>
+      /* #35 모바일 웹 화면으로 보이도록 */
+      @media (max-width: 600px) {
+        .container {
+          display: grid;
+        }
+        .sidebar {
+          width: 90%;
+          border-radius: 0;
+          border: none;
+          border-bottom: 3px solid #1a7416;
+        } /** < 모바일에서는 이게 버튼을 누르면 접혀서 지도를 더 크게 볼 수 있도록 해줘*/
+        .map {
+          flex: none;
+          height: 50vh;
+          font-size: 24px;
+        }
+        .header {
+          font-size: 20px;
+          margin-bottom: 15px;
+        }
+        .service-application {
+          margin-bottom: 15px;
+        }
+        .service-detail {
+          margin: 5px 0;
+          padding: 5px;
+        }
+        .status-indicators {
+          gap: 5px;
+        }
+        .status-indicator {
+          gap: 5px;
+          padding: 5px;
+        }
+        .status-indicator .circle {
+          width: 15px;
+          height: 15px;
+        }
+      }
       body {
         margin: 0;
         font-family: Arial, sans-serif;

@@ -6,6 +6,8 @@
   "예상 서비스 완료 시간"에 deliveries.csv에 있는 time 값 넣기(단, 해당 client_id에 해당하면서 delivery_type이 "배달"일 때 행에 해당하는 time값)
 #34 고객이 보는 지도 - 고객 주문 위치 받아서 마커 표시 - 고객 주문 위치 중심으로 지도 고정
 
+#35 고객 화면과 Driver 화면에서 코드 추가 - 모바일 웹 화면으로 확인할 때, 페이지 연결 및 구조가 적절히 보이도록
+
 '''
 from flask import Flask, render_template, abort
 import pandas as pd
@@ -15,6 +17,13 @@ app = Flask(__name__)
 #22 CSV 파일 로드해서 데이터를 읽어오는 함수
 def load_deliveries():
     return pd.read_csv("C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/static/deliveries.csv")
+
+
+#35 페이지 연결 
+@app.route('/client')
+def client_home_page():
+    return render_template('screen_Client_home.html')
+
 
 @app.route('/client/<int:client_id>')
 def client_page(client_id):    

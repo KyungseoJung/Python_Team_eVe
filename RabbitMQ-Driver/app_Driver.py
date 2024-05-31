@@ -1,3 +1,8 @@
+'''
+
+#35 고객 화면과 Driver 화면에서 코드 추가 - 모바일 웹 화면으로 확인할 때, 페이지 연결 및 구조가 적절히 보이도록
+
+'''
 from flask import Flask, render_template, send_from_directory, abort
 import pandas as pd
 
@@ -12,6 +17,11 @@ def deliveries():
 # //#33 Driver 여러 명 페이지
 def load_deliveries():
     return pd.read_csv("C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/static/deliveries.csv")
+
+#35 페이지 연결 
+@app.route('/driver')
+def client_home_page():
+    return render_template('screen_Driver_home.html')
 
 # //#33 Driver 여러 명 페이지
 @app.route('/driver/<int:driver_id>')
