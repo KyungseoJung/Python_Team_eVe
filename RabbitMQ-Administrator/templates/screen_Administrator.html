@@ -26,6 +26,9 @@
 (서비스 요청 시간에 따라 각각 다른 파일에 저장)
 
 #30 fix: 기존에 csv를 불러오던 코드를 txt 파일을 불러오는 코드로 변경한 뒤, 표와 지도 재표현하기
+
+#39 심야, 오전, 오후  -> 3가지 데이터를 나누어서 고객 주문 확인 지도와 배달 기사 지도에 표시하기
+
 -->
 
 <!DOCTYPE html>
@@ -369,7 +372,7 @@
               "
             />
 
-            새벽 주문
+            심야 주문
           </button>
           <button
             class="button-check"
@@ -386,7 +389,7 @@
               "
             />
 
-            주간 주문
+            오전 주문
           </button>
           <button
             class="button-check"
@@ -403,7 +406,7 @@
               "
             />
 
-            야간 주문
+            오후 주문
           </button>
           <div class="table-container">
             <table id="orderTable"></table>
@@ -457,7 +460,7 @@
           <!-- #30 fix -->
           <button
             class="button-check"
-            onclick="loadConfirmedOrderData('/static/orderData/E_01.txt')"
+            onclick="initOrderMap('E_01.txt'); loadConfirmedOrderData('/static/orderData/E_01.txt')"
           >
             <img
               src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
@@ -470,11 +473,11 @@
               "
             />
 
-            새벽 주문
+            심야 주문
           </button>
           <button
             class="button-check"
-            onclick="loadConfirmedOrderData('/static/orderData/E_02.txt')"
+            onclick="initOrderMap('E_02.txt'); loadConfirmedOrderData('/static/orderData/E_02.txt')"
           >
             <img
               src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
@@ -487,11 +490,11 @@
               "
             />
 
-            주간 주문
+            오전 주문
           </button>
           <button
             class="button-check"
-            onclick="loadConfirmedOrderData('/static/orderData/E_03.txt')"
+            onclick="initOrderMap('E_03.txt'); loadConfirmedOrderData('/static/orderData/E_03.txt')"
           >
             <img
               src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
@@ -504,7 +507,7 @@
               "
             />
 
-            야간 주문
+            오후 주문
           </button>
 
           <div class="table-container">
@@ -512,22 +515,7 @@
           </div>
         </div>
         <div class="panel">
-          <h2>주문 Map</h2>
-          <button class="button-check" onclick="initOrderMap()">
-            <img
-              src="https://cdn-icons-png.flaticon.com/128/854/854878.png"
-              alt="Load Icon"
-              style="
-                height: 30px;
-                width: 30px;
-                vertical-align: middle;
-                margin-right: 5px;
-              "
-            />
-
-            주문 Map 불러오기
-          </button>
-
+          <h2>주문 위치 확인 Map</h2>
           <div id="orderMapDiv" style="width: 100%; height: 400px"></div>
         </div>
       </div>
@@ -549,7 +537,7 @@
             <!-- initOrderMap, orderMapDiv, 변수(orderMap) 데이터를 Driver로 바꾸기 -->
             <div class="panel">
               <h2>Driver Map</h2>
-              <button class="button-check" onclick="initDriverMap()">
+              <button class="button-check" onclick="initDriverMap('E_01.txt')">
                 <img
                   src="https://cdn-icons-png.flaticon.com/128/854/854878.png"
                   alt="Load Icon"
@@ -560,10 +548,35 @@
                     margin-right: 5px;
                   "
                 />
-
-                Driver Map 불러오기
+                심야 Map
               </button>
 
+              <button class="button-check" onclick="initDriverMap('E_02.txt')">
+                <img
+                  src="https://cdn-icons-png.flaticon.com/128/854/854878.png"
+                  alt="Load Icon"
+                  style="
+                    height: 30px;
+                    width: 30px;
+                    vertical-align: middle;
+                    margin-right: 5px;
+                  "
+                />
+                오전 Map
+              </button>
+              <button class="button-check" onclick="initDriverMap('E_03.txt')">
+                <img
+                  src="https://cdn-icons-png.flaticon.com/128/854/854878.png"
+                  alt="Load Icon"
+                  style="
+                    height: 30px;
+                    width: 30px;
+                    vertical-align: middle;
+                    margin-right: 5px;
+                  "
+                />
+                오후 Map
+              </button>
               <div id="driverMapDiv" style="width: 100%; height: 400px"></div>
             </div>
           </div>
@@ -904,7 +917,14 @@
       var stompClient; // #30-2 미리 선언
       var confirmedDataLoaded = false; //#30-2 fix: loadConfirmedOrderData함수가 실행된 후, highlightClientData함수가 실행되어야 함
 
-      // #30 fix: csv 파일이 아닌 txt 파일을 바탕으로 데이터 가져오기
+      // #39 심야, 오전, 오후  -> 3가지 데이터를 나누어서 고객 주문 확인 지도와 배달 기사 지도에 표시하기
+      let selectedFile = "";
+
+      function setSelectedFile(file) {
+        selectedFile = file;
+
+        console.log("//#39 선택한 시간대: " + selectedFile);
+      }
 
       // // #30 latitude,longitude를 통해서 "도로명 주소"를 column으로 나타내기
       // function loadConfirmedOrderData() {
@@ -983,11 +1003,7 @@
       function loadConfirmedOrderData(fileName) {
         // Updated function to load data from E_01.txt and display it in a table
         // #30 fix: csv 파일이 아닌 txt 파일을 표로 나타내서 화면에 표시 && 지도에 표시
-        let selectedFile = "";
 
-        function setSelectedFile(file) {
-          selectedFile = file;
-        }
         fetch(fileName) // 누르는 버튼에 따라 파일 위치를 올바르게 가져오도록
           .then((response) => response.text())
           .then((data) => {
@@ -1155,16 +1171,12 @@
 
       // 지도에서 모든 markers Clear
 
-      function initOrderMap() {
+      function initOrderMap(fileName) {
         // #30 fix: 기존에 csv를 불러오던 코드를 txt 파일을 불러오는 코드로 변경한 뒤, 표와 지도 재표현하기
-
-        // if (!selectedFile) {
-        //   alert("먼저 주문 유형을 선택하세요.");
-        //   return;
-        // }
+        // #39 심야, 오전, 오후  -> 3가지 데이터를 나누어서 고객 주문 확인 지도와 배달 기사 지도에 표시하기
 
         // fetch(`/static/${selectedFile}`)
-        fetch(`/static/orderData/E_01.txt`)
+        fetch(`/static/orderData/${fileName}`)
           .then((response) => response.text())
           .then((data) => {
             const lines = data
@@ -1337,7 +1349,7 @@
               map: orderMap,
               // icon: "https://cdn-icons-png.flaticon.com/128/14034/14034740.png",
               icon: "/static/image/redMarker.png",
-              size: new Tmapv3.Size(0.1, 0.1), // 아이콘의 크기 설정
+              // size: new Tmapv3.Size(0.1, 0.1), // 아이콘의 크기 설정
             });
             markers[index] = selectedMarker; // Update the array with the new highlighted marker
           }, 2000); // 2초 지연
@@ -1829,10 +1841,10 @@
       //     .catch((error) => console.error("Error loading CSV data:", error));
       // }
 
-      function initDriverMap() {
+      function initDriverMap(fileName) {
         // #33-1 지도 첫 시작 - 들어온 주문들의 중심 위치로 시작
         // #30 fix: 기존에 csv를 불러오던 코드를 txt 파일을 불러오는 코드로 변경한 뒤, 표와 지도 재표현하기
-        fetch(`/static/orderData/E_01.txt`)
+        fetch(`/static/orderData/${fileName}`)
           .then((response) => response.text())
           .then((data) => {
             const lines = data
