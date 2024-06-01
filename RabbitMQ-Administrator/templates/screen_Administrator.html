@@ -22,6 +22,9 @@
 #37 고객 화면 - 주문 정보 데이터 RabbitMQ로 송신하기 && 다음 페이지(screen_Client.html)로 보내기
 -> screen_Client_order.html 로부터 RabbitMQ 수신하기
 
+#38 RabbitMQ를 통해 고객 화면으로부터 수신한 주문 정보를 txt 파일에 추가
+(서비스 요청 시간에 따라 각각 다른 파일에 저장)
+
 -->
 
 <!DOCTYPE html>
@@ -1070,20 +1073,24 @@
           var clientOrderData = JSON.parse(message.body);
           console.log("//#37 고객 주문 데이터 수신: " + clientOrderData.body);
           console.log(
-            "//#37 고객 주문 데이터 - 고객 아이디: " + clientOrderData.clientId
+            "//#37 고객 주문 데이터 - 고객 아이디: " +
+              parseInt(clientOrderData.clientId)
           );
           console.log(
-            "//#37 고객 주문 데이터 - 위도: " + clientOrderData.latitude
+            "//#37 고객 주문 데이터 - 위도: " +
+              parseFloat(clientOrderData.latitude)
           );
           console.log(
-            "//#37 고객 주문 데이터 - 경도: " + clientOrderData.longitude
+            "//#37 고객 주문 데이터 - 경도: " +
+              parseFloat(clientOrderData.longitude)
           );
           console.log(
-            "//#37 고객 주문 데이터 - 충전량: " + clientOrderData.chargeAmount
+            "//#37 고객 주문 데이터 - 충전량: " +
+              parseInt(clientOrderData.chargeAmount)
           );
           console.log(
             "//#37 고객 주문 데이터 - 예약 시작 시간: " +
-              clientOrderData.reservationTime
+              parseInt(clientOrderData.reservationTime)
           );
           console.log(
             "//#37 고객 주문 데이터 - 차량번호: " + clientOrderData.carNumber
@@ -1092,8 +1099,12 @@
             "//#37 고객 주문 데이터 - 상세 주소: " +
               clientOrderData.detailAddress
           );
+
+          // #38 RabbitMQ를 통해 고객 화면으로부터 수신한 주문 정보를 txt 파일에 추가(서비스 요청 시간에 따라 각각 다른 파일에 저장)
+          appendDataToFile(clientOrderData);
         });
       }
+
       //#30-2 fix
       function ReadyToUpdateRowColor(clientId) {
         var table = document.getElementById("confirmedOrderTable");
@@ -1140,6 +1151,38 @@
             }
           }
         }
+      }
+
+      //#38 RabbitMQ를 통해 고객 화면으로부터 수신한 주문 정보를 txt 파일에 추가 - 여기부터
+      function appendDataToFile(clientOrderData) {
+        // Prepare the data to be sent to the server
+        var dataToSend = {
+          xcoord: parseFloat(clientOrderData.longitude),
+          ycoord: parseFloat(clientOrderData.latitude),
+          demand: parseInt(clientOrderData.chargeAmount),
+          ready_time: parseInt(clientOrderData.reservationTime),
+          due_date: parseInt(clientOrderData.reservationTime) + 60, // Ensure dueDate is included in clientOrderData
+        };
+
+        // Send data to the server using AJAX
+        fetch("/append_data", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(dataToSend),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.status === "success") {
+              console.log("Data appended successfully");
+            } else {
+              console.error("Failed to append data");
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
       }
 
       // connectToRabbitMQ() 함수를 통해 RabbitMQ 통신 시작

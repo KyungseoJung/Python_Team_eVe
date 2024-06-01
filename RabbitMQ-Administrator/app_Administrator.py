@@ -5,6 +5,13 @@
 # //#28 수리모형 코드 통합 - [경로 계산하기] 버튼 누르면, 수리모형 코드 실행되도록 - csv 파일 지정한 파일 위치에 저장되도록
 # //#29 배터리 강화학습 코드 통합
 
+# //#38 RabbitMQ를 통해 고객 화면으로부터 수신한 주문 정보를 txt 파일에 추가
+# (서비스 요청 시간에 따라 각각 다른 파일에 저장)
+# - 서비스 요청 시간이 0~420인 경우: SOP_01.txt 파일
+# - 서비스 요청 시간이 480~900인 경우: SOP_02.txt 파일
+# - 서비스 요청 시간이 960~1380인 경우: SOP_03.txt 파일
+
+
 # from flask import Flask, render_template
 # from flask import jsonify, request # //#28 수리모형 코드 통합을 위한 import
 
@@ -19,6 +26,54 @@ from dash.dependencies import Input, Output, State
 import dash_daq as daq
 
 app = Flask(__name__)
+
+#===================================================================================================
+# //#38 RabbitMQ를 통해 고객 화면으로부터 수신한 주문 정보를 txt 파일에 추가 - 여기부터
+
+@app.route('/append_data', methods=['POST'])
+def append_data():
+    data = request.get_json()
+
+    try:
+        xcoord = float(data['xcoord'])
+        ycoord = float(data['ycoord'])
+        demand = int(data['demand'])
+        ready_time = int(data['ready_time'])
+        due_date = int(data['due_date'])
+
+        # 신청한 시간대별로 파일 위치 지정
+        # - 서비스 요청 시간이 0~420인 경우: SOP_01.txt 파일
+        # - 서비스 요청 시간이 480~900인 경우: SOP_02.txt 파일
+        # - 서비스 요청 시간이 960~1380인 경우: SOP_03.txt 파일
+        if 0 <= ready_time < 480:
+            file_name = 'orderData/SOP_01.txt'
+        elif 480 <= ready_time < 960:
+            file_name = 'orderData/SOP_02.txt'
+        elif 960 <= ready_time <= 1380:
+            file_name = 'orderData/SOP_03.txt'
+
+        append_customer_to_file(file_name, xcoord, ycoord, demand, ready_time, due_date)
+
+        return jsonify({"status": "success"}), 200
+    except ValueError:
+        return jsonify({"status": "error", "message": "Invalid data types"}), 400
+
+def append_customer_to_file(file_name, xcoord, ycoord, demand, ready_time, due_date):
+    with open(file_name, 'r') as file:
+        lines = file.readlines()
+        customer_lines = [line for line in lines if line.strip() and line.split()[0].isdigit()]
+        last_customer_line = customer_lines[-1]
+        last_cust_no = int(last_customer_line.split()[0])
+
+    new_cust_no = last_cust_no + 1
+
+    new_customer_info = f"{new_cust_no:<6} {xcoord:<20} {ycoord:<20} {demand:<8} {ready_time:<10} {due_date:<10} 0\n"
+
+    with open(file_name, 'a') as file:
+        file.write(new_customer_info)
+
+# //#38 RabbitMQ를 통해 고객 화면으로부터 수신한 주문 정보를 txt 파일에 추가 - 여기까지
+#===================================================================================================
 
 #===================================================================================================
 # //#29 배터리 강화학습 코드 통합 - 여기부터
