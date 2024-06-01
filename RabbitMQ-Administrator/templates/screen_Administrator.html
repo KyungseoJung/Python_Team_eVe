@@ -25,6 +25,7 @@
 #38 RabbitMQ를 통해 고객 화면으로부터 수신한 주문 정보를 txt 파일에 추가
 (서비스 요청 시간에 따라 각각 다른 파일에 저장)
 
+#30 fix: 기존에 csv를 불러오던 코드를 txt 파일을 불러오는 코드로 변경한 뒤, 표와 지도 재표현하기
 -->
 
 <!DOCTYPE html>
@@ -352,8 +353,11 @@
       <!-- ============= //#28 [전략 도출] 페이지 - 수리모형 코드 통합 - 여기부터 =============-->
       <div id="appendAndSolve" class="section visible">
         <div class="panel">
-          <h2>주문 데이터 확인</h2>
-          <button class="button-check" onclick="loadOrderData()">
+          <h2>실시간 주문 데이터 확인</h2>
+          <button
+            class="button-check"
+            onclick="loadOrderData('/static/orderData/E_01.txt')"
+          >
             <img
               src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
               alt="Load Icon"
@@ -365,7 +369,41 @@
               "
             />
 
-            실시간 주문 데이터
+            새벽 주문
+          </button>
+          <button
+            class="button-check"
+            onclick="loadOrderData('/static/orderData/E_02.txt')"
+          >
+            <img
+              src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
+              alt="Load Icon"
+              style="
+                height: 30px;
+                width: 30px;
+                vertical-align: middle;
+                margin-right: 5px;
+              "
+            />
+
+            주간 주문
+          </button>
+          <button
+            class="button-check"
+            onclick="loadOrderData('/static/orderData/E_03.txt')"
+          >
+            <img
+              src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
+              alt="Load Icon"
+              style="
+                height: 30px;
+                width: 30px;
+                vertical-align: middle;
+                margin-right: 5px;
+              "
+            />
+
+            야간 주문
           </button>
           <div class="table-container">
             <table id="orderTable"></table>
@@ -402,7 +440,7 @@
       <div id="orderCheck" class="section">
         <div class="panel">
           <h2>확정 주문 데이터</h2>
-          <button class="button-check" onclick="loadConfirmedOrderData()">
+          <!-- <button class="button-check" onclick="loadConfirmedOrderData()">
             <img
               src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
               alt="Load Icon"
@@ -415,7 +453,60 @@
             />
 
             확정 주문 데이터
+          </button> -->
+          <!-- #30 fix -->
+          <button
+            class="button-check"
+            onclick="loadConfirmedOrderData('/static/orderData/E_01.txt')"
+          >
+            <img
+              src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
+              alt="Load Icon"
+              style="
+                height: 30px;
+                width: 30px;
+                vertical-align: middle;
+                margin-right: 5px;
+              "
+            />
+
+            새벽 주문
           </button>
+          <button
+            class="button-check"
+            onclick="loadConfirmedOrderData('/static/orderData/E_02.txt')"
+          >
+            <img
+              src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
+              alt="Load Icon"
+              style="
+                height: 30px;
+                width: 30px;
+                vertical-align: middle;
+                margin-right: 5px;
+              "
+            />
+
+            주간 주문
+          </button>
+          <button
+            class="button-check"
+            onclick="loadConfirmedOrderData('/static/orderData/E_03.txt')"
+          >
+            <img
+              src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
+              alt="Load Icon"
+              style="
+                height: 30px;
+                width: 30px;
+                vertical-align: middle;
+                margin-right: 5px;
+              "
+            />
+
+            야간 주문
+          </button>
+
           <div class="table-container">
             <table id="confirmedOrderTable"></table>
           </div>
@@ -659,29 +750,119 @@
       // }
 
       // #32 [전략 도출] 페이지 - 좌측 표 생성
-      function loadOrderData() {
-        fetch("/static/orders.csv")
+      // function loadOrderData() {
+      //   fetch("/static/orders.csv")
+      //     .then((response) => response.text())
+      //     .then((data) => {
+      //       // const rows = data.split("\n").map((row) => row.split(","));
+      //       // Filters out empty rows and checks for non-empty first cell
+      //       //#30 비어있는 행(empty rows)을 확인(=row에 2개 이상에 데이터가 있는지 확인) && 1번째 셀이 비어있는지 확인 - 비어있는 csv 파일을 보이도록 하지 않기 위해
+      //       const rows = data
+      //         .split("\n")
+      //         .map((row) => row.split(","))
+      //         .filter((row) => row.length > 1 && row[0]);
+
+      //       // #28 latitude,longitude 컬럼 제외하고 "도로명주소" 컬럼 추가
+      //       const headers = rows[0]; // headers가 1번째 행에 있다고 가정
+      //       const latIndex = headers.indexOf("latitude"); // 새로운 column 삭제
+      //       const lonIndex = headers.indexOf("longitude"); // 새로운 column 삭제
+      //       headers.push("도로명주소"); // 새로운 column 추가
+
+      //       // 테이블 생성
+      //       const table = document.getElementById("orderTable");
+      //       table.innerHTML = ""; // 이전 데이터 Clear
+
+      //       // header 행 생성
+      //       const headerRow = document.createElement("tr");
+      //       headers.forEach((header) => {
+      //         const th = document.createElement("th");
+      //         th.textContent = header;
+      //         headerRow.appendChild(th);
+      //       });
+      //       table.appendChild(headerRow);
+
+      //       // 각 데이터 행 처리
+      //       const dataRows = rows.slice(1); // header에 해당하는 행은 제외하고~ 시작
+      //       Promise.all(
+      //         dataRows.map((row) => {
+      //           const latitude = row[latIndex];
+      //           const longitude = row[lonIndex];
+
+      //           console.log("Latitude:", latitude, "Longitude:", longitude); // #30 debug 목적 코드
+
+      //           return getAddress(latitude, longitude).then((address) => {
+      //             row.push(address); // 도로명주소 데이터를 row 값에 추가
+      //             return row;
+      //           });
+      //         })
+      //       ).then((processedRows) => {
+      //         // processedRows.forEach((row) => { // #30-2 주석처리 (row) -> (row, index)
+      //         processedRows.forEach((row, index) => {
+      //           const tr = document.createElement("tr");
+      //           row.forEach((cell) => {
+      //             const td = document.createElement("td");
+      //             td.textContent = cell;
+      //             tr.appendChild(td);
+      //           });
+      //           // #30-2 테이블 클릭하면, 지도에 표시되도록
+      //           tr.onclick = () =>
+      //             highlightClientData(
+      //               index,
+      //               parseFloat(row[latIndex]),
+      //               parseFloat(row[lonIndex])
+      //             );
+
+      //           table.appendChild(tr);
+      //         });
+      //       });
+      //     })
+      //     .catch((error) => {
+      //       alert("Error loading data: " + error);
+      //     });
+      // }
+
+      function loadOrderData(fileName) {
+        // #32 [전략 도출] 페이지 - 좌측 표 생성
+        // #30fix: csv 파일이 아닌 txt 파일을 표로 나타내서 화면에 표시
+
+        fetch(fileName) // 텍스트 파일 경로를 지정합니다.
           .then((response) => response.text())
           .then((data) => {
-            // const rows = data.split("\n").map((row) => row.split(","));
-            // Filters out empty rows and checks for non-empty first cell
-            //#30 비어있는 행(empty rows)을 확인(=row에 2개 이상에 데이터가 있는지 확인) && 1번째 셀이 비어있는지 확인 - 비어있는 csv 파일을 보이도록 하지 않기 위해
-            const rows = data
+            // 데이터를 줄 단위로 나누고 불필요한 공백 제거
+            const lines = data
               .split("\n")
-              .map((row) => row.split(","))
-              .filter((row) => row.length > 1 && row[0]);
+              .map((line) => line.trim())
+              .filter((line) => line);
 
-            // #28 latitude,longitude 컬럼 제외하고 "도로명주소" 컬럼 추가
-            const headers = rows[0]; // headers가 1번째 행에 있다고 가정
-            const latIndex = headers.indexOf("latitude"); // 새로운 column 삭제
-            const lonIndex = headers.indexOf("longitude"); // 새로운 column 삭제
-            headers.push("도로명주소"); // 새로운 column 추가
+            // 헤더와 데이터 행 추출
+            const headers = [
+              "CUST NO.",
+              "XCOORD.",
+              "YCOORD.",
+              "DEMAND",
+              "READY TIME",
+              "DUE DATE",
+              "SERVICE TIME",
+            ];
+            const rows = [];
+            let parsingCustomers = false;
 
-            // 테이블 생성
+            lines.forEach((line) => {
+              if (line.includes("CUSTOMER")) {
+                parsingCustomers = true;
+              } else if (parsingCustomers) {
+                const parts = line.split(/\s+/);
+                if (parts.length === headers.length) {
+                  rows.push(parts);
+                }
+              }
+            });
+
+            // 테이블 생성 및 데이터 삽입
             const table = document.getElementById("orderTable");
-            table.innerHTML = ""; // 이전 데이터 Clear
+            table.innerHTML = ""; // 이전 데이터 제거
 
-            // header 행 생성
+            // 헤더 행 생성
             const headerRow = document.createElement("tr");
             headers.forEach((header) => {
               const th = document.createElement("th");
@@ -690,39 +871,23 @@
             });
             table.appendChild(headerRow);
 
-            // 각 데이터 행 처리
-            const dataRows = rows.slice(1); // header에 해당하는 행은 제외하고~ 시작
-            Promise.all(
-              dataRows.map((row) => {
-                const latitude = row[latIndex];
-                const longitude = row[lonIndex];
-
-                console.log("Latitude:", latitude, "Longitude:", longitude); // #30 debug 목적 코드
-
-                return getAddress(latitude, longitude).then((address) => {
-                  row.push(address); // 도로명주소 데이터를 row 값에 추가
-                  return row;
-                });
-              })
-            ).then((processedRows) => {
-              // processedRows.forEach((row) => { // #30-2 주석처리 (row) -> (row, index)
-              processedRows.forEach((row, index) => {
-                const tr = document.createElement("tr");
-                row.forEach((cell) => {
-                  const td = document.createElement("td");
-                  td.textContent = cell;
-                  tr.appendChild(td);
-                });
-                // #30-2 테이블 클릭하면, 지도에 표시되도록
-                tr.onclick = () =>
-                  highlightClientData(
-                    index,
-                    parseFloat(row[latIndex]),
-                    parseFloat(row[lonIndex])
-                  );
-
-                table.appendChild(tr);
+            // 데이터 행 생성
+            rows.forEach((row, index) => {
+              const tr = document.createElement("tr");
+              row.forEach((cell) => {
+                const td = document.createElement("td");
+                td.textContent = cell;
+                tr.appendChild(td);
               });
+
+              // 동적 하이라이트 및 지도 업데이트를 위한 클릭 이벤트 추가
+              tr.onclick = () =>
+                highlightClientData(
+                  index,
+                  parseFloat(row[1]),
+                  parseFloat(row[2])
+                );
+              table.appendChild(tr);
             });
           })
           .catch((error) => {
@@ -739,30 +904,128 @@
       var stompClient; // #30-2 미리 선언
       var confirmedDataLoaded = false; //#30-2 fix: loadConfirmedOrderData함수가 실행된 후, highlightClientData함수가 실행되어야 함
 
-      // #30 latitude,longitude를 통해서 "도로명 주소"를 column으로 나타내기
-      function loadConfirmedOrderData() {
-        fetch("/static/orders.csv")
+      // #30 fix: csv 파일이 아닌 txt 파일을 바탕으로 데이터 가져오기
+
+      // // #30 latitude,longitude를 통해서 "도로명 주소"를 column으로 나타내기
+      // function loadConfirmedOrderData() {
+      //   fetch("/static/orders.csv")
+      //     .then((response) => response.text())
+      //     .then((data) => {
+      //       // const rows = data.split("\n").map((row) => row.split(","));
+      //       // Filters out empty rows and checks for non-empty first cell
+      //       //#30 비어있는 행(empty rows)을 확인(=row에 2개 이상에 데이터가 있는지 확인) && 1번째 셀이 비어있는지 확인 - 비어있는 csv 파일을 보이도록 하지 않기 위해
+      //       const rows = data
+      //         .split("\n")
+      //         .map((row) => row.split(","))
+      //         .filter((row) => row.length > 1 && row[0]);
+
+      //       // #28 latitude,longitude 컬럼 제외하고 "도로명주소" 컬럼 추가
+      //       const headers = rows[0]; // headers가 1번째 행에 있다고 가정
+      //       const latIndex = headers.indexOf("latitude"); // 새로운 column 삭제
+      //       const lonIndex = headers.indexOf("longitude"); // 새로운 column 삭제
+      //       headers.push("도로명주소1"); // 새로운 column 추가
+
+      //       // 테이블 생성
+      //       const table = document.getElementById("confirmedOrderTable");
+      //       table.innerHTML = ""; // 이전 데이터 Clear
+
+      //       // header 행 생성
+      //       const headerRow = document.createElement("tr");
+      //       headers.forEach((header) => {
+      //         const th = document.createElement("th");
+      //         th.textContent = header;
+      //         headerRow.appendChild(th);
+      //       });
+      //       table.appendChild(headerRow);
+
+      //       // 각 데이터 행 처리
+      //       const dataRows = rows.slice(1); // header에 해당하는 행은 제외하고~ 시작
+      //       Promise.all(
+      //         dataRows.map((row) => {
+      //           const latitude = row[latIndex];
+      //           const longitude = row[lonIndex];
+
+      //           console.log("Latitude:", latitude, "Longitude:", longitude); // #30 debug 목적 코드
+
+      //           return getAddress(latitude, longitude).then((address) => {
+      //             row.push(address); // 도로명주소 데이터를 row 값에 추가
+      //             return row;
+      //           });
+      //         })
+      //       ).then((processedRows) => {
+      //         // processedRows.forEach((row) => { // #30-2 주석처리 (row) -> (row, index)
+      //         processedRows.forEach((row, index) => {
+      //           const tr = document.createElement("tr");
+      //           row.forEach((cell) => {
+      //             const td = document.createElement("td");
+      //             td.textContent = cell;
+      //             tr.appendChild(td);
+      //           });
+      //           // #30-2 테이블 클릭하면, 지도에 표시되도록
+      //           tr.onclick = () =>
+      //             highlightClientData(
+      //               index,
+      //               parseFloat(row[latIndex]),
+      //               parseFloat(row[lonIndex])
+      //             );
+
+      //           table.appendChild(tr);
+      //         });
+      //       });
+      //     })
+      //     .catch((error) => {
+      //       alert("Error loading data: " + error);
+      //     });
+
+      //   confirmedDataLoaded = true; // #30-2 fix: confirmedDataLoaded 함수가 실행된 이후에 highlightClientData함수가 실행되도록
+      // }
+
+      function loadConfirmedOrderData(fileName) {
+        // Updated function to load data from E_01.txt and display it in a table
+        // #30 fix: csv 파일이 아닌 txt 파일을 표로 나타내서 화면에 표시 && 지도에 표시
+        let selectedFile = "";
+
+        function setSelectedFile(file) {
+          selectedFile = file;
+        }
+        fetch(fileName) // 누르는 버튼에 따라 파일 위치를 올바르게 가져오도록
           .then((response) => response.text())
           .then((data) => {
-            // const rows = data.split("\n").map((row) => row.split(","));
-            // Filters out empty rows and checks for non-empty first cell
-            //#30 비어있는 행(empty rows)을 확인(=row에 2개 이상에 데이터가 있는지 확인) && 1번째 셀이 비어있는지 확인 - 비어있는 csv 파일을 보이도록 하지 않기 위해
-            const rows = data
+            // 데이터를 lines 별로 나누기
+            const lines = data
               .split("\n")
-              .map((row) => row.split(","))
-              .filter((row) => row.length > 1 && row[0]);
+              .map((line) => line.trim())
+              .filter((line) => line);
 
-            // #28 latitude,longitude 컬럼 제외하고 "도로명주소" 컬럼 추가
-            const headers = rows[0]; // headers가 1번째 행에 있다고 가정
-            const latIndex = headers.indexOf("latitude"); // 새로운 column 삭제
-            const lonIndex = headers.indexOf("longitude"); // 새로운 column 삭제
-            headers.push("도로명주소1"); // 새로운 column 추가
+            // headers 값과 rows 값 뽑기
+            const headers = [
+              "CUST NO.",
+              "XCOORD.",
+              "YCOORD.",
+              "DEMAND",
+              "READY TIME",
+              "DUE DATE",
+              "SERVICE TIME",
+            ];
+            const rows = [];
+            let parsingCustomers = false;
 
-            // 테이블 생성
+            lines.forEach((line) => {
+              if (line.includes("CUSTOMER")) {
+                parsingCustomers = true;
+              } else if (parsingCustomers) {
+                const parts = line.split(/\s+/);
+                if (parts.length === headers.length) {
+                  rows.push(parts);
+                }
+              }
+            });
+
+            // 테이블 생성 및 값 채우기
             const table = document.getElementById("confirmedOrderTable");
-            table.innerHTML = ""; // 이전 데이터 Clear
+            table.innerHTML = ""; // Clear previous data
 
-            // header 행 생성
+            // header row 만들기
             const headerRow = document.createElement("tr");
             headers.forEach((header) => {
               const th = document.createElement("th");
@@ -771,49 +1034,32 @@
             });
             table.appendChild(headerRow);
 
-            // 각 데이터 행 처리
-            const dataRows = rows.slice(1); // header에 해당하는 행은 제외하고~ 시작
-            Promise.all(
-              dataRows.map((row) => {
-                const latitude = row[latIndex];
-                const longitude = row[lonIndex];
-
-                console.log("Latitude:", latitude, "Longitude:", longitude); // #30 debug 목적 코드
-
-                return getAddress(latitude, longitude).then((address) => {
-                  row.push(address); // 도로명주소 데이터를 row 값에 추가
-                  return row;
-                });
-              })
-            ).then((processedRows) => {
-              // processedRows.forEach((row) => { // #30-2 주석처리 (row) -> (row, index)
-              processedRows.forEach((row, index) => {
-                const tr = document.createElement("tr");
-                row.forEach((cell) => {
-                  const td = document.createElement("td");
-                  td.textContent = cell;
-                  tr.appendChild(td);
-                });
-                // #30-2 테이블 클릭하면, 지도에 표시되도록
-                tr.onclick = () =>
-                  highlightClientData(
-                    index,
-                    parseFloat(row[latIndex]),
-                    parseFloat(row[lonIndex])
-                  );
-
-                table.appendChild(tr);
+            // data rows 채우기
+            rows.forEach((row, index) => {
+              const tr = document.createElement("tr");
+              row.forEach((cell) => {
+                const td = document.createElement("td");
+                td.textContent = cell;
+                tr.appendChild(td);
               });
+
+              // #30-2 테이블 클릭하면, 지도에 표시되도록
+              // Add click event for dynamic highlighting and map interaction
+              tr.onclick = () =>
+                highlightClientData(
+                  index,
+                  parseFloat(row[2]),
+                  parseFloat(row[1])
+                );
+              // #30 fix: 수리모형 팀에서 위도, 경도를 -> 경도, 위도로 거꾸로 저장해서 row[2], row[1] 순서대로 변수 값 넣음
+              table.appendChild(tr);
             });
           })
           .catch((error) => {
             alert("Error loading data: " + error);
           });
-
-        confirmedDataLoaded = true; // #30-2 fix: confirmedDataLoaded 함수가 실행된 이후에 highlightClientData함수가 실행되도록
       }
 
-      // #30 위도, 경도를 바탕으로 도로명 주소 return
       function getAddress(latitude, longitude) {
         // 오류 발생 시, 잡아서 처리할 수 있도록
         return new Promise((resolve, reject) => {
@@ -845,33 +1091,123 @@
 
       // #30 고객 주문 정보를 Map으로 보여주기
       // 지도 시작 및 업데이트
+      // function initOrderMap() {
+      //   fetch("/static/orders.csv")
+      //     .then((response) => response.text())
+      //     .then((data) => {
+      //       const rows = data.split("\n").map((row) => row.split(","));
+      //       if (rows.length < 2) return; // Ensure there is data
+
+      //       // 지도에 마커 표시하기 위함
+      //       const headers = rows[0];
+      //       const latIndex = headers.indexOf("latitude");
+      //       const lonIndex = headers.indexOf("longitude");
+      //       // 지도에 툴팁으로 고객 정보 표시하기 위함
+      //       // const clientIndex = headers.indexOf("client_id");
+      //       // const chargeAmountIndex = headers.indexOf("charge_amount");
+
+      //       let latSum = 0,
+      //         lonSum = 0,
+      //         validCount = 0;
+
+      //       rows.slice(1).forEach((row) => {
+      //         // 지도에 마커 표시하기 위함
+      //         const latitude = parseFloat(row[latIndex]);
+      //         const longitude = parseFloat(row[lonIndex]);
+
+      //         if (!isNaN(latitude) && !isNaN(longitude)) {
+      //           latSum += latitude;
+      //           lonSum += longitude;
+      //           validCount++;
+      //         }
+      //       });
+
+      //       if (validCount > 0) {
+      //         const centerLat = latSum / validCount;
+      //         const centerLon = lonSum / validCount;
+
+      //         //이미 지도 활성화 되었다면, just reset the center and clear old markers
+      //         if (orderMap) {
+      //           orderMap.setCenter(new Tmapv3.LatLng(centerLat, centerLon));
+      //           clearMarkers(); // 이미 markers가 존재한다면, Clear
+      //         } else {
+      //           // (첫 활성화) 지도 활성화 - Initialize the map for the first time
+      //           orderMap = new Tmapv3.Map("orderMapDiv", {
+      //             center: new Tmapv3.LatLng(centerLat, centerLon),
+      //             width: "100%",
+      //             height: "400px",
+      //             zoom: 12,
+      //           });
+      //         }
+
+      //         // 마커들 Load and display
+      //         loadMarkers(
+      //           rows,
+      //           latIndex,
+      //           lonIndex
+      //           // clientIndex,
+      //           // chargeAmountIndex
+      //         );
+      //       }
+      //     })
+      //     .catch((error) => console.error("Error loading CSV data:", error));
+      // }
+
+      // 지도에서 모든 markers Clear
+
       function initOrderMap() {
-        fetch("/static/orders.csv")
+        // #30 fix: 기존에 csv를 불러오던 코드를 txt 파일을 불러오는 코드로 변경한 뒤, 표와 지도 재표현하기
+
+        // if (!selectedFile) {
+        //   alert("먼저 주문 유형을 선택하세요.");
+        //   return;
+        // }
+
+        // fetch(`/static/${selectedFile}`)
+        fetch(`/static/orderData/E_01.txt`)
           .then((response) => response.text())
           .then((data) => {
-            const rows = data.split("\n").map((row) => row.split(","));
-            if (rows.length < 2) return; // Ensure there is data
+            const lines = data
+              .split("\n")
+              .map((line) => line.trim())
+              .filter((line) => line);
 
-            // 지도에 마커 표시하기 위함
-            const headers = rows[0];
-            const latIndex = headers.indexOf("latitude");
-            const lonIndex = headers.indexOf("longitude");
-            // 지도에 툴팁으로 고객 정보 표시하기 위함
-            // const clientIndex = headers.indexOf("client_id");
-            // const chargeAmountIndex = headers.indexOf("charge_amount");
+            // Extract headers and rows
+            const headers = [
+              "CUST NO.",
+              "XCOORD.",
+              "YCOORD.",
+              "DEMAND",
+              "READY TIME",
+              "DUE DATE",
+              "SERVICE TIME",
+            ];
+            const rows = [];
+            let parsingCustomers = false;
 
+            lines.forEach((line) => {
+              if (line.includes("CUSTOMER")) {
+                parsingCustomers = true;
+              } else if (parsingCustomers) {
+                const parts = line.split(/\s+/);
+                if (parts.length === headers.length) {
+                  rows.push(parts);
+                }
+              }
+            });
+
+            // Calculate the center of the map
             let latSum = 0,
               lonSum = 0,
               validCount = 0;
+            rows.forEach((row) => {
+              // #30 fix: 수리모형 팀에서 위도, 경도를 -> 경도, 위도로 거꾸로 저장해서 row[2], row[1] 순서대로 변수 값 넣음
+              const lat = parseFloat(row[2]);
+              const lon = parseFloat(row[1]);
 
-            rows.slice(1).forEach((row) => {
-              // 지도에 마커 표시하기 위함
-              const latitude = parseFloat(row[latIndex]);
-              const longitude = parseFloat(row[lonIndex]);
-
-              if (!isNaN(latitude) && !isNaN(longitude)) {
-                latSum += latitude;
-                lonSum += longitude;
+              if (!isNaN(lat) && !isNaN(lon)) {
+                latSum += lat;
+                lonSum += lon;
                 validCount++;
               }
             });
@@ -880,12 +1216,10 @@
               const centerLat = latSum / validCount;
               const centerLon = lonSum / validCount;
 
-              //이미 지도 활성화 되었다면, just reset the center and clear old markers
               if (orderMap) {
                 orderMap.setCenter(new Tmapv3.LatLng(centerLat, centerLon));
-                clearMarkers(); // 이미 markers가 존재한다면, Clear
+                clearMarkers(); // Clear old markers
               } else {
-                // (첫 활성화) 지도 활성화 - Initialize the map for the first time
                 orderMap = new Tmapv3.Map("orderMapDiv", {
                   center: new Tmapv3.LatLng(centerLat, centerLon),
                   width: "100%",
@@ -894,49 +1228,60 @@
                 });
               }
 
-              // 마커들 Load and display
-              loadMarkers(
-                rows,
-                latIndex,
-                lonIndex
-                // clientIndex,
-                // chargeAmountIndex
-              );
+              // Load and display markers
+              loadMarkers(rows);
             }
           })
-          .catch((error) => console.error("Error loading CSV data:", error));
+          .catch((error) => console.error("Error loading data:", error));
       }
 
-      // 지도에서 모든 markers Clear
       function clearMarkers() {
         markers.forEach((marker) => marker.setMap(null)); // 지도에서 모든 markers 삭제
         markers = []; // Reset the markers array
       }
 
       // 지도에 markers 로드하는 함수
-      function loadMarkers(
-        rows,
-        latIndex,
-        lonIndex
-        // clientIndex,
-        // chargeAmountIndex
-      ) {
-        rows.slice(1).forEach((row) => {
-          // 지도에 마커 표시하기 위함
-          const latitude = parseFloat(row[latIndex]);
-          const longitude = parseFloat(row[lonIndex]);
+      // function loadMarkers(
+      //   rows,
+      //   latIndex,
+      //   lonIndex
+      //   // clientIndex,
+      //   // chargeAmountIndex
+      // ) {
+      //   rows.slice(1).forEach((row) => {
+      //     // 지도에 마커 표시하기 위함
+      //     const latitude = parseFloat(row[latIndex]);
+      //     const longitude = parseFloat(row[lonIndex]);
 
-          if (!isNaN(latitude) && !isNaN(longitude)) {
-            // Ensure coordinates are valid
-            let marker = new Tmapv3.Marker({
-              // title: `Client ID: ${clientId}, Charge: ${chargeAmount}`, // Simple tooltip
-              // title: "강조",
-              label: "Driver",
+      //     if (!isNaN(latitude) && !isNaN(longitude)) {
+      //       // Ensure coordinates are valid
+      //       let marker = new Tmapv3.Marker({
+      //         // title: `Client ID: ${clientId}, Charge: ${chargeAmount}`, // Simple tooltip
+      //         // title: "강조",
+      //         label: "Driver",
 
-              position: new Tmapv3.LatLng(latitude, longitude),
+      //         position: new Tmapv3.LatLng(latitude, longitude),
+      //         map: orderMap,
+      //       });
+      //       markers.push(marker); //marker 저장
+      //     }
+      //   });
+      // }
+
+      function loadMarkers(rows) {
+        // #30 fix: 기존에 csv를 불러오던 코드를 txt 파일을 불러오는 코드로 변경한 뒤, 표와 지도 재표현하기
+        rows.forEach((row, index) => {
+          // #30 fix: 수리모형 팀에서 위도, 경도를 -> 경도, 위도로 거꾸로 저장해서 row[2], row[1] 순서대로 변수 값 넣음
+          const lat = parseFloat(row[2]);
+          const lon = parseFloat(row[1]);
+
+          if (!isNaN(lat) && !isNaN(lon)) {
+            const marker = new Tmapv3.Marker({
+              position: new Tmapv3.LatLng(lat, lon),
               map: orderMap,
+              label: `Customer ${row[0]}`,
             });
-            markers.push(marker); //marker 저장
+            markers.push(marker); // Save marker
           }
         });
       }
@@ -1434,30 +1779,103 @@
       loadDriverDeliveries(); //#33-3 Driver들의 업무 진척도 [수평 진행률] 표시
 
       // #33-1 지도 첫 시작 - 들어온 주문들의 중심 위치로 시작
+      // function initDriverMap() {
+      //   fetch("/static/orders.csv")
+      //     .then((response) => response.text())
+      //     .then((data) => {
+      //       const rows = data.split("\n").map((row) => row.split(","));
+      //       if (rows.length < 2) return; // Ensure there is data
+
+      //       // 지도에 마커 표시하기 위함
+      //       const headers = rows[0];
+      //       const latIndex = headers.indexOf("latitude");
+      //       const lonIndex = headers.indexOf("longitude");
+
+      //       let latSum = 0,
+      //         lonSum = 0,
+      //         validCount = 0;
+
+      //       rows.slice(1).forEach((row) => {
+      //         // 지도에 마커 표시하기 위함
+      //         const latitude = parseFloat(row[latIndex]);
+      //         const longitude = parseFloat(row[lonIndex]);
+
+      //         if (!isNaN(latitude) && !isNaN(longitude)) {
+      //           latSum += latitude;
+      //           lonSum += longitude;
+      //           validCount++;
+      //         }
+      //       });
+
+      //       if (validCount > 0) {
+      //         const centerLat = latSum / validCount;
+      //         const centerLon = lonSum / validCount;
+
+      //         //이미 지도 활성화 되었다면, just reset the center and clear old markers
+      //         if (driverMap) {
+      //           driverMap.setCenter(new Tmapv3.LatLng(centerLat, centerLon));
+      //           clearMarkers(); // 이미 markers가 존재한다면, Clear
+      //         } else {
+      //           // (첫 활성화) 지도 활성화 - Initialize the map for the first time
+      //           driverMap = new Tmapv3.Map("driverMapDiv", {
+      //             center: new Tmapv3.LatLng(centerLat, centerLon),
+      //             width: "100%",
+      //             height: "400px",
+      //             zoom: 12,
+      //           });
+      //         }
+      //       }
+      //     })
+      //     .catch((error) => console.error("Error loading CSV data:", error));
+      // }
+
       function initDriverMap() {
-        fetch("/static/orders.csv")
+        // #33-1 지도 첫 시작 - 들어온 주문들의 중심 위치로 시작
+        // #30 fix: 기존에 csv를 불러오던 코드를 txt 파일을 불러오는 코드로 변경한 뒤, 표와 지도 재표현하기
+        fetch(`/static/orderData/E_01.txt`)
           .then((response) => response.text())
           .then((data) => {
-            const rows = data.split("\n").map((row) => row.split(","));
-            if (rows.length < 2) return; // Ensure there is data
+            const lines = data
+              .split("\n")
+              .map((line) => line.trim())
+              .filter((line) => line);
 
-            // 지도에 마커 표시하기 위함
-            const headers = rows[0];
-            const latIndex = headers.indexOf("latitude");
-            const lonIndex = headers.indexOf("longitude");
+            // Extract headers and rows
+            const headers = [
+              "CUST NO.",
+              "XCOORD.",
+              "YCOORD.",
+              "DEMAND",
+              "READY TIME",
+              "DUE DATE",
+              "SERVICE TIME",
+            ];
+            const rows = [];
+            let parsingCustomers = false;
 
+            lines.forEach((line) => {
+              if (line.includes("CUSTOMER")) {
+                parsingCustomers = true;
+              } else if (parsingCustomers) {
+                const parts = line.split(/\s+/);
+                if (parts.length === headers.length) {
+                  rows.push(parts);
+                }
+              }
+            });
+
+            // Calculate the center of the map
             let latSum = 0,
               lonSum = 0,
               validCount = 0;
+            rows.forEach((row) => {
+              // #30 fix: 수리모형 팀에서 위도, 경도를 -> 경도, 위도로 거꾸로 저장해서 row[2], row[1] 순서대로 변수 값 넣음
+              const lat = parseFloat(row[2]);
+              const lon = parseFloat(row[1]);
 
-            rows.slice(1).forEach((row) => {
-              // 지도에 마커 표시하기 위함
-              const latitude = parseFloat(row[latIndex]);
-              const longitude = parseFloat(row[lonIndex]);
-
-              if (!isNaN(latitude) && !isNaN(longitude)) {
-                latSum += latitude;
-                lonSum += longitude;
+              if (!isNaN(lat) && !isNaN(lon)) {
+                latSum += lat;
+                lonSum += lon;
                 validCount++;
               }
             });
@@ -1466,12 +1884,10 @@
               const centerLat = latSum / validCount;
               const centerLon = lonSum / validCount;
 
-              //이미 지도 활성화 되었다면, just reset the center and clear old markers
               if (driverMap) {
                 driverMap.setCenter(new Tmapv3.LatLng(centerLat, centerLon));
-                clearMarkers(); // 이미 markers가 존재한다면, Clear
+                clearMarkers(); // Clear old markers
               } else {
-                // (첫 활성화) 지도 활성화 - Initialize the map for the first time
                 driverMap = new Tmapv3.Map("driverMapDiv", {
                   center: new Tmapv3.LatLng(centerLat, centerLon),
                   width: "100%",
@@ -1479,9 +1895,12 @@
                   zoom: 12,
                 });
               }
+
+              // Load and display markers
+              loadMarkers(rows);
             }
           })
-          .catch((error) => console.error("Error loading CSV data:", error));
+          .catch((error) => console.error("Error loading data:", error));
       }
 
       // #33-1 Driver 위치 표시

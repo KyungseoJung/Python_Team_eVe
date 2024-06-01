@@ -7,16 +7,16 @@
 
 # //#38 RabbitMQ를 통해 고객 화면으로부터 수신한 주문 정보를 txt 파일에 추가
 # (서비스 요청 시간에 따라 각각 다른 파일에 저장)
-# - 서비스 요청 시간이 0~420인 경우: SOP_01.txt 파일
-# - 서비스 요청 시간이 480~900인 경우: SOP_02.txt 파일
-# - 서비스 요청 시간이 960~1380인 경우: SOP_03.txt 파일
+# - 서비스 요청 시간이 0~420인 경우: E_01.txt 파일
+# - 서비스 요청 시간이 480~900인 경우: E_02.txt 파일
+# - 서비스 요청 시간이 960~1380인 경우: E_03.txt 파일
 
 
 # from flask import Flask, render_template
 # from flask import jsonify, request # //#28 수리모형 코드 통합을 위한 import
 
 import pandas as pd
-import eve_0529_test # //#28 수리모형 코드 통합 (Import 수리모형 함수를 포함한 Python file )
+import eve_0601_test # //#28 수리모형 코드 통합 (Import 수리모형 함수를 포함한 Python file )
 
 import pandas as pd
 from datetime import datetime
@@ -42,15 +42,15 @@ def append_data():
         due_date = int(data['due_date'])
 
         # 신청한 시간대별로 파일 위치 지정
-        # - 서비스 요청 시간이 0~420인 경우: SOP_01.txt 파일
-        # - 서비스 요청 시간이 480~900인 경우: SOP_02.txt 파일
-        # - 서비스 요청 시간이 960~1380인 경우: SOP_03.txt 파일
+        # - 서비스 요청 시간이 0~420인 경우: E_01.txt 파일
+        # - 서비스 요청 시간이 480~900인 경우: E_02.txt 파일
+        # - 서비스 요청 시간이 960~1380인 경우: E_03.txt 파일
         if 0 <= ready_time < 480:
-            file_name = 'orderData/SOP_01.txt'
+            file_name = 'orderData/E_01.txt'
         elif 480 <= ready_time < 960:
-            file_name = 'orderData/SOP_02.txt'
+            file_name = 'orderData/E_02.txt'
         elif 960 <= ready_time <= 1380:
-            file_name = 'orderData/SOP_03.txt'
+            file_name = 'orderData/E_03.txt'
 
         append_customer_to_file(file_name, xcoord, ycoord, demand, ready_time, due_date)
 
@@ -374,7 +374,7 @@ def calculate_path():
         # import eve_0521_test
     try:
         # //#28 내가 불러올 데이터
-        datafile = "C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/orderData/SOP_01.txt"
+        datafile = "C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/orderData/E_01.txt"
 
         # //#28 내가 지정하는 경로 (파일 저장)
         # //#28 fix: pickle_path 코드 수정 - 주석 처리
@@ -383,7 +383,7 @@ def calculate_path():
         truck_csv_path = "C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/static/"
 
         # eve_0522_test3.solve(datafile, pickle_path, battery_csv_path, truck_csv_path) # //#28 fix: pickle_path 코드 수정 - 주석 처리 
-        eve_0529_test.solve(datafile, battery_csv_path, truck_csv_path)
+        eve_0601_test.solve(datafile, battery_csv_path, truck_csv_path)
 
         # Assuming there's a function in eve_0522_test.py to calculate the path and save a CSV
         # result = eve_0522_test.calculate_and_save()
