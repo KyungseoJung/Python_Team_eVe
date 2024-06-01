@@ -1,7 +1,8 @@
 <!-- //#23 T-Map appkey = 5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu -->
 
 <!-- 
-    //#36 고객 화면 - 예약 화면 추가
+#36 고객 화면 - 예약 화면 추가
+#37 고객 화면 - 주문 정보 데이터 RabbitMQ로 송신하기 && 다음 페이지(screen_Client.html)로 보내기
  -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -9,6 +10,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>예약 페이지</title>
+
+    <!-- #37 TMAP API 스크립트 추가 -->
+    <script src="https://apis.openapi.sk.com/tmap/vectorjs?version=1&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu"></script>
+
+    <!-- #37 STOMP 프로토콜 연결 - Include the STOMP JavaScript client-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
     <style>
       body,
       html {
@@ -256,7 +264,10 @@
             />
           </div>
 
-          <button class="btn">예약 완료하기</button>
+          <!-- //#37 고객 화면 주문 데이터 RabbitMQ("topic/orderUpdate")로 송신 & 다음 페이지로 보내기-->
+          <button class="btn" onclick="completeReservation()">
+            예약 완료하기
+          </button>
         </div>
       </div>
     </div>
@@ -320,6 +331,11 @@
       let selectedHour = null;
       let selectedMinute = null;
       let reservationTimeInMinutes = null;
+      // #37 고객 화면 주문 데이터 RabbitMQ("topic/orderUpdate")로 송신 & 다음 페이지로 보내기
+      let clientId = "{{ clientId }}";
+      let latitude = null;
+      let longitude = null;
+      // let detailAddress = null;  // #37 필요 없을 듯
 
       function initTmap() {
         map = new Tmapv2.Map("map_div", {
@@ -347,7 +363,9 @@
                 const info = data.coordinateInfo.coordinate[0];
                 const lat = info.newLat;
                 const lon = info.newLon;
-                const detailAddress = info.fullAddress; // 상세 주소 받아오기
+                // detailAddress = info.fullAddress; // 상세 주소 받아오기  // #37 필요 없을 듯
+                latitude = lat; // 위도 저장
+                longitude = lon; // 경도 저장
                 if (marker) {
                   marker.setMap(null);
                 }
@@ -356,7 +374,9 @@
                   map: map,
                 });
                 map.setCenter(new Tmapv2.LatLng(lat, lon));
-                document.getElementById("detail-address").value = detailAddress; // 상세 주소 입력
+                // #37 필요 없을 듯
+                // document.getElementById("detail-address").value = detailAddress; // 상세 주소 입력
+                // console.log("//#37 상세 주소: " + detailAddress);
               } else {
                 alert("주소를 찾을 수 없습니다.");
               }
@@ -477,8 +497,114 @@
         }
       }
 
+      // =========== 여기부터 #37 고객 화면 주문 데이터 RabbitMQ("topic/orderUpdate")로 송신 & 다음 페이지로 보내기
+      function completeReservation() {
+        const product = document.getElementById("product").value;
+        const carNumber = document.getElementById("car-number").value;
+        const detailAddress = document.getElementById("detail-address").value;
+        if (
+          !product ||
+          selectedHour === null ||
+          selectedMinute === null ||
+          latitude === null ||
+          longitude === null ||
+          !carNumber ||
+          !detailAddress
+        ) {
+          alert("모든 정보를 입력해주세요.");
+          return;
+        }
+
+        sendReservationDataToRabbitMQ(
+          clientId,
+          latitude,
+          longitude,
+          product,
+          reservationTimeInMinutes,
+          carNumber,
+          detailAddress
+        );
+
+        setTimeout(function () {
+          const queryParams = new URLSearchParams({
+            latitude: latitude,
+            longitude: longitude,
+            charge_amount: product,
+            reservation_time: reservationTimeInMinutes,
+            car_number: carNumber,
+            // detail_address: detailAddress, // #37 이 데이터는 다음 페이지로 보낼 필요 없음
+          }).toString();
+          // #37 고객 화면 주문 데이터를 다음 이어지는 페이지로 보내기
+          // app_Client.py에서 /client/<clientId> 라우트가 latitude, longitude, charge_amount, reservation_time 파라미터를 받도록
+          // -> 이 파라미터들을 HTML 템플릿에 전달하여 사용할 수 있도록
+          window.location.href = `/client/${clientId}?${queryParams}`;
+        }, 10000);
+      }
+
+      function sendReservationDataToRabbitMQ(
+        clientId,
+        latitude,
+        longitude,
+        chargeAmount,
+        reservationTime,
+        carNumber,
+        detailAddress
+      ) {
+        var reservationMessage = JSON.stringify({
+          clientId: clientId,
+          latitude: latitude,
+          longitude: longitude,
+          chargeAmount: chargeAmount,
+          reservationTime: reservationTime,
+          carNumber: carNumber,
+          detailAddress: detailAddress,
+        });
+
+        console.log("//#37 상세주소 정보: " + detailAddress); //#37 페이지 넘길 때, 10초 딜레이(setTimeout)를 줌으로써 console창으로 확인해보기
+        // #37RabbitMQ 송신 주소
+        var reservationTopic = "/topic/orderUpdate";
+
+        if (stompClient && stompClient.connected) {
+          stompClient.send(reservationTopic, {}, reservationMessage);
+          console.log("예약 정보 전송: ", reservationMessage);
+        } else {
+          console.log(
+            "RabbitMQ와 연결되지 않았습니다. 다시 연결을 시도합니다..."
+          );
+          connectToRabbitMQ();
+          setTimeout(function () {
+            if (stompClient.connected) {
+              stompClient.send(reservationTopic, {}, reservationMessage);
+              console.log("예약 정보 전송: ", reservationMessage);
+            } else {
+              console.log("RabbitMQ 연결에 실패했습니다.");
+            }
+          }, 5000);
+        }
+      }
+
+      function connectToRabbitMQ() {
+        var ws = new WebSocket("ws://127.0.0.1:15674/ws");
+        stompClient = Stomp.over(ws);
+
+        stompClient.connect(
+          "guest",
+          "guest",
+          function (frame) {
+            console.log("Connected: " + frame);
+          },
+          function (error) {
+            console.log("Error connecting to WebSocket: " + error);
+          }
+        );
+      }
+
+      // =========== 여기부터 #37 고객 화면 주문 데이터 RabbitMQ("topic/orderUpdate")로 송신 & 다음 페이지로 보내기
+
       document.addEventListener("DOMContentLoaded", function () {
         initTmap();
+        // #37 고객 화면 주문 데이터 RabbitMQ("topic/orderUpdate")로 송신 & 다음 페이지로 보내기
+        connectToRabbitMQ();
       });
     </script>
   </body>

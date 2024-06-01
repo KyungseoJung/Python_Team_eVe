@@ -7,9 +7,11 @@
 #34 고객이 보는 지도 - 고객 주문 위치 받아서 마커 표시 - 고객 주문 위치 중심으로 지도 고정
 
 #35 고객 화면과 Driver 화면에서 코드 추가 - 모바일 웹 화면으로 확인할 때, 페이지 연결 및 구조가 적절히 보이도록
+#36 고객 화면 - 예약 화면 추가
+#37 고객 화면 - 주문 정보 데이터 RabbitMQ로 송신하기 && 다음 페이지(screen_Client.html)로 보내기
 
 '''
-from flask import Flask, render_template, abort
+from flask import Flask, render_template, abort, request, redirect, url_for
 import pandas as pd
 
 app = Flask(__name__)
@@ -23,6 +25,11 @@ def load_deliveries():
 @app.route('/client')
 def client_home_page():
     return render_template('screen_Client_home.html')
+
+#36 고객 화면 - 예약 화면 추가
+@app.route('/client/<clientId>/order')
+def client_order(clientId):
+    return render_template('screen_Client_order.html', clientId=clientId)
 
 
 @app.route('/client/<int:client_id>')
@@ -46,6 +53,13 @@ def client_page(client_id):
     #23 fix: 각 고객은 자신에게 할당된 Driver위치가 보이도록
     serviceStart_info = deliveries[(deliveries['client_id'] == client_id) & (deliveries['delivery_type'] == '배달')]    
 
+    # 37 app_Client.py 파일에서 screen_Client_order.html에서 데이터를 받고, screen_Client.html로 전달하는 기능을 추가
+    latitude = request.args.get('latitude')
+    longitude = request.args.get('longitude')
+    charge_amount = request.args.get('charge_amount')
+    reservation_time = request.args.get('reservation_time')
+    car_number = request.args.get('car_number')
+
     # 위에서 찾은 serviceComplete_info에 해당하는 데이터가 존재한다면, 아래 코드 실행
     if not serviceComplete_info.empty:
         serviceComplete_time = serviceComplete_info.iloc[0]['time']  # 처음으로 일치하는 값이 우리가 필요한 데이터일 테니까. (물론, 중복된 데이터가 존재해서도 안 됨.)
@@ -60,7 +74,9 @@ def client_page(client_id):
 
             # 'render_template'함수를 이용해 'client_id'와 'serviceComplete_time' 데이터를 HTML 파일로 전달하여, 페이지에서 사용할 수 있도록 함.
             #23 fix: 각 고객은 자신에게 할당된 Driver위치가 보이도록 // #34
-            return render_template('screen_Client.html', clientId=client_id, serviceCompleteTime=serviceComplete_time, serviceStartDriver = serviceStart_driver, servicePosLat=servicePos_Lat, servicePosLng = servicePos_Lng)     
+            # 37 app_Client.py 파일에서 screen_Client_order.html에서 데이터를 받고, screen_Client.html로 전달하는 기능을 추가
+            return render_template('screen_Client.html', clientId=client_id, serviceCompleteTime=serviceComplete_time, serviceStartDriver = serviceStart_driver, servicePosLat=servicePos_Lat, servicePosLng = servicePos_Lng,
+                                   latitude=latitude, longitude = longitude, chargeAmount = charge_amount, reservationTime = reservation_time, carNumber = car_number)     
     else:
         abort(404)  # 특정 "client_id"에서 "delivery_type"의 값이 '배달'이 없는 경우 에러 화면 표시
 

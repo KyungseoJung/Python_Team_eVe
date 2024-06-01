@@ -16,6 +16,8 @@
 #34 고객이 보는 지도 - 고객 주문 위치 받아서 마커 표시 - 고객 주문 위치 중심으로 지도 고정
 
 #35 고객 화면과 Driver 화면에서 코드 추가 - 모바일 웹 화면으로 확인할 때, 페이지 연결 및 구조가 적절히 보이도록
+#37 screen_Client_order.html로부터 받은 데이터 사용 
+
 -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -156,11 +158,17 @@
         <!-- 서비스 신청 내역 큰 박스 -->
         <div class="service-application">
           <div class="header">서비스 신청 내역</div>
+          <!-- #37 screen_Client_order.html로부터 받은 데이터 사용 -->
           <div class="service-detail">
-            <strong>차량 정보:</strong> 12루 1234
+            <strong>차량 정보:</strong>
+            <span id="car-number"></span>
           </div>
-          <div class="service-detail"><strong>선택 상품:</strong> 40% 충전</div>
-          <div class="service-detail"><strong>예약 시간:</strong> 18:00</div>
+          <div class="service-detail">
+            <strong>선택 상품:</strong><span id="charge-amount"></span>
+          </div>
+          <div class="service-detail">
+            <strong>예약 시간:</strong><span id="reservation-time"></span>
+          </div>
         </div>
 
         <!-- =============서비스 상태 표시 (배달 중이에요)(충전을 시작했어요)(충전을 완료했어요)============= -->
@@ -215,6 +223,29 @@
     <!-- ========= 기능 구현 코드 ========= -->
     <script>
       document.addEventListener("DOMContentLoaded", function () {
+        // #37 ========= 여기부터 - screen_Client_order.html로부터 받은 데이터 사용 =========
+        // URL 파라미터에서 데이터 가져오기
+        const urlParams = new URLSearchParams(window.location.search);
+        const latitude = urlParams.get("latitude");
+        const longitude = urlParams.get("longitude");
+        const chargeAmount = urlParams.get("charge_amount");
+        const reservationTime = urlParams.get("reservation_time");
+        const carNumber = urlParams.get("car_number");
+
+        // HTML 요소에 데이터 설정
+        document.getElementById("car-number").innerText = carNumber;
+        document.getElementById("charge-amount").innerText = chargeAmount;
+
+        // 예약 시간을 시간 형식으로 변환하여 설정
+        const hours = Math.floor(reservationTime / 60);
+        const minutes = reservationTime % 60;
+        const formattedTime = `${String(hours).padStart(2, "0")}:${String(
+          minutes
+        ).padStart(2, "0")}`;
+        document.getElementById("reservation-time").innerText = formattedTime;
+
+        // #37 ========= 여기까지 - screen_Client_order.html로부터 받은 데이터 사용 =========
+
         // #20 RabbitMQ 서버 연결 - STOMP 프로토콜 연결
         var stompClient;
         var map; // #24 지도 표시

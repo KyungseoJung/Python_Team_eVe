@@ -18,6 +18,10 @@
 //#33-1 지도에 표시
 //#33-2 드라이버 정보 표로 표시(driver_id, 상태, 다음 도착지)
 //#33-3 드라이버 업무 진척도를 [수평 진행률 표시줄]을 통해 표현 
+
+#37 고객 화면 - 주문 정보 데이터 RabbitMQ로 송신하기 && 다음 페이지(screen_Client.html)로 보내기
+-> screen_Client_order.html 로부터 RabbitMQ 수신하기
+
 -->
 
 <!DOCTYPE html>
@@ -498,11 +502,11 @@
       </div>
       <!-- ============= //[배달 관리] 페이지 - 여기까지 =============-->
 
-      <div id="battery" class="section">
-        <!-- ============= //#29 배터리 강화학습 코드 통합 - 여기부터=============-->
+      <!-- ============= //#29 배터리 강화학습 코드 통합 - 여기부터=============-->
+      <!-- 5 canvas elements for 5 charts -->
+      <!-- <div id="battery" class="section">
         <h2>Battery State of Charge</h2>
         <div id="charts">
-          <!-- 5 canvas elements for 5 charts -->
           <div class="chart-container">
             <canvas id="batteryChart0" width="400" height="400"></canvas>
           </div>
@@ -519,8 +523,8 @@
             <canvas id="batteryChart4" width="400" height="400"></canvas>
           </div>
         </div>
-        <!-- ============= //#29 배터리 강화학습 코드 통합 - 여기까지=============-->
-      </div>
+      </div> -->
+      <!-- ============= //#29 배터리 강화학습 코드 통합 - 여기까지=============-->
     </div>
 
     <script>
@@ -1037,6 +1041,9 @@
             // #33-2 RabbitMQ로부터 Driver들의 서비스 상태를 얻기
             //#33-3 Driver의 업무 진척도 [수평 진행률] 업데이트
             subscribeDriverStateTopics();
+
+            //#37 screen_Client_order.html 로부터 RabbitMQ 수신하기
+            subscribeClientOrderTopics();
           },
           function (error) {
             console.log("WebSocket error: " + error);
@@ -1055,6 +1062,38 @@
         });
       }
 
+      //#37 screen_Client_order.html 로부터 RabbitMQ 수신하기
+      function subscribeClientOrderTopics() {
+        var subscribeOrderTopic = "/topic/orderUpdate";
+
+        stompClient.subscribe(subscribeOrderTopic, function (message) {
+          var clientOrderData = JSON.parse(message.body);
+          console.log("//#37 고객 주문 데이터 수신: " + clientOrderData.body);
+          console.log(
+            "//#37 고객 주문 데이터 - 고객 아이디: " + clientOrderData.clientId
+          );
+          console.log(
+            "//#37 고객 주문 데이터 - 위도: " + clientOrderData.latitude
+          );
+          console.log(
+            "//#37 고객 주문 데이터 - 경도: " + clientOrderData.longitude
+          );
+          console.log(
+            "//#37 고객 주문 데이터 - 충전량: " + clientOrderData.chargeAmount
+          );
+          console.log(
+            "//#37 고객 주문 데이터 - 예약 시작 시간: " +
+              clientOrderData.reservationTime
+          );
+          console.log(
+            "//#37 고객 주문 데이터 - 차량번호: " + clientOrderData.carNumber
+          );
+          console.log(
+            "//#37 고객 주문 데이터 - 상세 주소: " +
+              clientOrderData.detailAddress
+          );
+        });
+      }
       //#30-2 fix
       function ReadyToUpdateRowColor(clientId) {
         var table = document.getElementById("confirmedOrderTable");
