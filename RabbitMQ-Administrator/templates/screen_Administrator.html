@@ -89,21 +89,19 @@
         background: red;
       }
       /* ============= //#28 [전략 도출] 페이지 - 여기부터 =============--> */
-      .button-check {
-        /* color: white;
-        background: gray;
-        padding: 10px 20px;
-        border: none;
-        cursor: pointer;
-        margin-right: 10px; */
 
+      .button-check {
         color: black;
-        background: #ffd8d8; /* Dark grey background */
+        background: rgb(164, 196, 255);
         border: 1.5px solid #000000;
-        padding: 10px 40px; /* Larger buttons */
+        padding: 10px 40px;
         cursor: pointer;
-        font-size: 20px; /* Larger font size */
-        border-radius: 5px; /* Rounded corners */
+        font-size: 20px;
+        border-radius: 5px;
+      }
+      .button-check.active {
+        background: rgb(18, 23, 48);
+        color: white;
       }
       .button-calculate {
         color: white;
@@ -359,46 +357,22 @@
       <div id="appendAndSolve" class="section visible">
         <div class="panel">
           <h2>실시간 주문 데이터 확인</h2>
-          <button class="button-check" onclick="loadOrderData('E_01.txt')">
-            <img
-              src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
-              alt="Load Icon"
-              style="
-                height: 30px;
-                width: 30px;
-                vertical-align: middle;
-                margin-right: 5px;
-              "
-            />
-
+          <button
+            class="button-check"
+            onclick="highlightButton(this); loadOrderData('E_01.txt')"
+          >
             심야 주문
           </button>
-          <button class="button-check" onclick="loadOrderData('E_02.txt')">
-            <img
-              src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
-              alt="Load Icon"
-              style="
-                height: 30px;
-                width: 30px;
-                vertical-align: middle;
-                margin-right: 5px;
-              "
-            />
-
+          <button
+            class="button-check"
+            onclick="highlightButton(this); loadOrderData('E_02.txt')"
+          >
             오전 주문
           </button>
-          <button class="button-check" onclick="loadOrderData('E_03.txt')">
-            <img
-              src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
-              alt="Load Icon"
-              style="
-                height: 30px;
-                width: 30px;
-                vertical-align: middle;
-                margin-right: 5px;
-              "
-            />
-
+          <button
+            class="button-check"
+            onclick="highlightButton(this);loadOrderData('E_03.txt')"
+          >
             오후 주문
           </button>
           <div class="table-container">
@@ -453,53 +427,20 @@
           <!-- #30 fix -->
           <button
             class="button-check"
-            onclick="initOrderMap('E_01.txt'); loadConfirmedOrderData('/static/orderData/E_01.txt')"
+            onclick="highlightButton(this); initOrderMap('E_01.txt'); loadConfirmedOrderData('/static/orderData/E_01.txt')"
           >
-            <img
-              src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
-              alt="Load Icon"
-              style="
-                height: 30px;
-                width: 30px;
-                vertical-align: middle;
-                margin-right: 5px;
-              "
-            />
-
             심야 주문
           </button>
           <button
             class="button-check"
-            onclick="initOrderMap('E_02.txt'); loadConfirmedOrderData('/static/orderData/E_02.txt')"
+            onclick="highlightButton(this); initOrderMap('E_02.txt'); loadConfirmedOrderData('/static/orderData/E_02.txt')"
           >
-            <img
-              src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
-              alt="Load Icon"
-              style="
-                height: 30px;
-                width: 30px;
-                vertical-align: middle;
-                margin-right: 5px;
-              "
-            />
-
             오전 주문
           </button>
           <button
             class="button-check"
-            onclick="initOrderMap('E_03.txt'); loadConfirmedOrderData('/static/orderData/E_03.txt')"
+            onclick="highlightButton(this); initOrderMap('E_03.txt'); loadConfirmedOrderData('/static/orderData/E_03.txt')"
           >
-            <img
-              src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
-              alt="Load Icon"
-              style="
-                height: 30px;
-                width: 30px;
-                vertical-align: middle;
-                margin-right: 5px;
-              "
-            />
-
             오후 주문
           </button>
 
@@ -647,6 +588,20 @@
         document
           .querySelector(`.button[onclick="showSection('${section}')"]`)
           .classList.add("active");
+      }
+
+      // #30
+      function highlightButton(button) {
+        // Remove the active class from all buttons
+        const buttons = document.querySelectorAll(".button-check");
+        buttons.forEach((btn) => {
+          btn.classList.remove("active");
+          // btn.style.backgroundColor = "gray"; // Set other buttons to gray
+        });
+
+        // Add the active class to the clicked button
+        button.classList.add("active");
+        // button.style.backgroundColor = "red"; // Set the clicked button to red
       }
 
       function calculatePath() {
@@ -845,9 +800,9 @@
             // 헤더와 데이터 행 추출
             const headers = [
               "CUST NO.",
-              "DEMAND",
-              "READY TIME",
-              "DUE DATE",
+              "충전 요구량",
+              "서비스 신청 시간",
+              "서비스 종료 시간",
               "도로명주소", // 도로명주소 추가
             ];
 
@@ -887,8 +842,8 @@
               const lat = row[2];
               const lon = row[1];
               const demand = row[3];
-              const readyTime = row[4];
-              const dueDate = row[5];
+              const readyTime = convertTimeToString(parseInt(row[4]));
+              const dueDate = convertTimeToString(parseInt(row[5]));
 
               return getAddress(lat, lon).then((address) => {
                 return [
@@ -1027,9 +982,9 @@
             // Extract headers and rows
             const headers = [
               "CUST NO.",
-              "DEMAND",
-              "READY TIME",
-              "DUE DATE",
+              "충전 요구량",
+              "서비스 신청 시간",
+              "서비스 종료 시간",
               "도로명주소", // Add 도로명주소
             ];
             const rows = [];
@@ -1068,8 +1023,8 @@
               const lat = row[2];
               const lon = row[1];
               const demand = row[3];
-              const readyTime = row[4];
-              const dueDate = row[5];
+              const readyTime = convertTimeToString(parseInt(row[4]));
+              const dueDate = convertTimeToString(parseInt(row[5]));
 
               return getAddress(lat, lon).then((address) => {
                 return {
@@ -1109,6 +1064,15 @@
           .catch((error) => {
             alert("Error loading data: " + error);
           });
+      }
+
+      // #30 시간값을 실제 보는 시간처럼 표현하기
+      function convertTimeToString(time) {
+        let hours = Math.floor(time / 60);
+        let minutes = time % 60;
+        if (hours < 10) hours = "0" + hours;
+        if (minutes < 10) minutes = "0" + minutes;
+        return `${hours}:${minutes}`;
       }
 
       function getAddress(latitude, longitude) {
