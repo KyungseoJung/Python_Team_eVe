@@ -26,6 +26,7 @@
 (서비스 요청 시간에 따라 각각 다른 파일에 저장)
 
 #30 fix: 기존에 csv를 불러오던 코드를 txt 파일을 불러오는 코드로 변경한 뒤, 표와 지도 재표현하기
+#30 fix: 1번째 행(즉, CUST NO.가 0인 행)은 표와 지도에도 모두 표시하지 말기
 
 #39 심야, 오전, 오후  -> 3가지 데이터를 나누어서 고객 주문 확인 지도와 배달 기사 지도에 표시하기
 
@@ -357,10 +358,7 @@
       <div id="appendAndSolve" class="section visible">
         <div class="panel">
           <h2>실시간 주문 데이터 확인</h2>
-          <button
-            class="button-check"
-            onclick="loadOrderData('/static/orderData/E_01.txt')"
-          >
+          <button class="button-check" onclick="loadOrderData('E_01.txt')">
             <img
               src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
               alt="Load Icon"
@@ -374,10 +372,7 @@
 
             심야 주문
           </button>
-          <button
-            class="button-check"
-            onclick="loadOrderData('/static/orderData/E_02.txt')"
-          >
+          <button class="button-check" onclick="loadOrderData('E_02.txt')">
             <img
               src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
               alt="Load Icon"
@@ -391,10 +386,7 @@
 
             오전 주문
           </button>
-          <button
-            class="button-check"
-            onclick="loadOrderData('/static/orderData/E_03.txt')"
-          >
+          <button class="button-check" onclick="loadOrderData('E_03.txt')">
             <img
               src="https://cdn-icons-png.flaticon.com/128/9159/9159105.png"
               alt="Load Icon"
@@ -838,7 +830,7 @@
         // #32 [전략 도출] 페이지 - 좌측 표 생성
         // #30fix: csv 파일이 아닌 txt 파일을 표로 나타내서 화면에 표시
 
-        fetch(fileName) // 텍스트 파일 경로를 지정합니다.
+        fetch(`/static/orderData/${fileName}`) // 텍스트 파일 경로를 지정합니다.
           .then((response) => response.text())
           .then((data) => {
             // 데이터를 줄 단위로 나누고 불필요한 공백 제거
@@ -871,6 +863,10 @@
               }
             });
 
+            // Filter out the first row with "CUST NO." 0
+            // #30 fix: 1번째 행(즉, CUST NO.가 0인 행)은 표와 지도에도 모두 표시하지 말기
+            const filteredRows = rows.filter((row) => row[0] !== "0");
+
             // 테이블 생성 및 데이터 삽입
             const table = document.getElementById("orderTable");
             table.innerHTML = ""; // 이전 데이터 제거
@@ -885,7 +881,7 @@
             table.appendChild(headerRow);
 
             // 데이터 행 생성
-            rows.forEach((row, index) => {
+            filteredRows.forEach((row, index) => {
               const tr = document.createElement("tr");
               row.forEach((cell) => {
                 const td = document.createElement("td");
@@ -894,12 +890,15 @@
               });
 
               // 동적 하이라이트 및 지도 업데이트를 위한 클릭 이벤트 추가
-              tr.onclick = () =>
-                highlightClientData(
-                  index,
-                  parseFloat(row[1]),
-                  parseFloat(row[2])
-                );
+              // 여기에는 필요 없는 코드임
+              // tr.onclick = () =>
+              //   highlightClientData(
+              //     index,
+              //     parseFloat(row[2]),
+              //     parseFloat(row[1])
+              //   );
+              // #30 fix: 수리모형 팀에서 위도, 경도를 -> 경도, 위도로 거꾸로 저장해서 row[2], row[1] 순서대로 변수 값 넣음
+
               table.appendChild(tr);
             });
           })
@@ -918,13 +917,13 @@
       var confirmedDataLoaded = false; //#30-2 fix: loadConfirmedOrderData함수가 실행된 후, highlightClientData함수가 실행되어야 함
 
       // #39 심야, 오전, 오후  -> 3가지 데이터를 나누어서 고객 주문 확인 지도와 배달 기사 지도에 표시하기
-      let selectedFile = "";
+      // let selectedFile = "";
 
-      function setSelectedFile(file) {
-        selectedFile = file;
+      // function setSelectedFile(file) {
+      //   selectedFile = file;
 
-        console.log("//#39 선택한 시간대: " + selectedFile);
-      }
+      //   console.log("//#39 선택한 시간대: " + selectedFile);
+      // }
 
       // // #30 latitude,longitude를 통해서 "도로명 주소"를 column으로 나타내기
       // function loadConfirmedOrderData() {
@@ -1037,6 +1036,10 @@
               }
             });
 
+            // Filter out the first row with "CUST NO." 0
+            // #30 fix: 1번째 행(즉, CUST NO.가 0인 행)은 표와 지도에도 모두 표시하지 말기
+            const filteredRows = rows.filter((row) => row[0] !== "0");
+
             // 테이블 생성 및 값 채우기
             const table = document.getElementById("confirmedOrderTable");
             table.innerHTML = ""; // Clear previous data
@@ -1051,7 +1054,7 @@
             table.appendChild(headerRow);
 
             // data rows 채우기
-            rows.forEach((row, index) => {
+            filteredRows.forEach((row, index) => {
               const tr = document.createElement("tr");
               row.forEach((cell) => {
                 const td = document.createElement("td");
@@ -1281,21 +1284,28 @@
       // }
 
       function loadMarkers(rows) {
+        // 지도에 고객 주문 위치 markers 로드하는 함수
         // #30 fix: 기존에 csv를 불러오던 코드를 txt 파일을 불러오는 코드로 변경한 뒤, 표와 지도 재표현하기
-        rows.forEach((row, index) => {
-          // #30 fix: 수리모형 팀에서 위도, 경도를 -> 경도, 위도로 거꾸로 저장해서 row[2], row[1] 순서대로 변수 값 넣음
-          const lat = parseFloat(row[2]);
-          const lon = parseFloat(row[1]);
+        // rows.forEach((row, index) => {
 
-          if (!isNaN(lat) && !isNaN(lon)) {
-            const marker = new Tmapv3.Marker({
-              position: new Tmapv3.LatLng(lat, lon),
-              map: orderMap,
-              label: `Customer ${row[0]}`,
-            });
-            markers.push(marker); // Save marker
-          }
-        });
+        // #30 fix: 1번째 행(즉, CUST NO.가 0인 행)은 표와 지도에도 모두 표시하지 말기
+        rows
+          .filter((row) => row[0] !== "0")
+          .forEach((row, index) => {
+            // Exclude the first row
+            // #30 fix: 수리모형 팀에서 위도, 경도를 -> 경도, 위도로 거꾸로 저장해서 row[2], row[1] 순서대로 변수 값 넣음
+            const lat = parseFloat(row[2]);
+            const lon = parseFloat(row[1]);
+
+            if (!isNaN(lat) && !isNaN(lon)) {
+              const marker = new Tmapv3.Marker({
+                position: new Tmapv3.LatLng(lat, lon),
+                map: orderMap,
+                label: `Customer ${row[0]}`,
+              });
+              markers.push(marker); // Save marker
+            }
+          });
       }
 
       // #30-2 [주문 관리] 페이지 - 테이블 동적 기능
