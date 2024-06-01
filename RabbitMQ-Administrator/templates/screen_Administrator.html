@@ -27,6 +27,7 @@
 
 #30 fix: 기존에 csv를 불러오던 코드를 txt 파일을 불러오는 코드로 변경한 뒤, 표와 지도 재표현하기
 #30 fix: 1번째 행(즉, CUST NO.가 0인 행)은 표와 지도에도 모두 표시하지 말기
+#30 표에 나타낼 데이터 - 위도, 경도 대신에 도로명 주소로 표현하기 & 필요없는 SERVICE TIME 열 지우기
 
 #39 심야, 오전, 오후  -> 3가지 데이터를 나누어서 고객 주문 확인 지도와 배달 기사 지도에 표시하기
 
@@ -840,15 +841,16 @@
               .filter((line) => line);
 
             // 헤더와 데이터 행 추출
+            // #30 표에 나타낼 데이터 - 위도, 경도 대신에 도로명 주소로 표현하기 & 필요없는 SERVICE TIME 열 지우기
+            // 헤더와 데이터 행 추출
             const headers = [
               "CUST NO.",
-              "XCOORD.",
-              "YCOORD.",
               "DEMAND",
               "READY TIME",
               "DUE DATE",
-              "SERVICE TIME",
+              "도로명주소", // 도로명주소 추가
             ];
+
             const rows = [];
             let parsingCustomers = false;
 
@@ -857,14 +859,14 @@
                 parsingCustomers = true;
               } else if (parsingCustomers) {
                 const parts = line.split(/\s+/);
-                if (parts.length === headers.length) {
+                if (parts.length === 7) {
+                  // 기존 헤더의 길이에 맞춤
                   rows.push(parts);
                 }
               }
             });
 
             // Filter out the first row with "CUST NO." 0
-            // #30 fix: 1번째 행(즉, CUST NO.가 0인 행)은 표와 지도에도 모두 표시하지 말기
             const filteredRows = rows.filter((row) => row[0] !== "0");
 
             // 테이블 생성 및 데이터 삽입
@@ -881,25 +883,34 @@
             table.appendChild(headerRow);
 
             // 데이터 행 생성
-            filteredRows.forEach((row, index) => {
-              const tr = document.createElement("tr");
-              row.forEach((cell) => {
-                const td = document.createElement("td");
-                td.textContent = cell;
-                tr.appendChild(td);
+            const dataRows = filteredRows.map((row) => {
+              const lat = row[2];
+              const lon = row[1];
+              const demand = row[3];
+              const readyTime = row[4];
+              const dueDate = row[5];
+
+              return getAddress(lat, lon).then((address) => {
+                return [
+                  row[0], // CUST NO.
+                  demand,
+                  readyTime,
+                  dueDate,
+                  address, // 도로명주소
+                ];
               });
+            });
 
-              // 동적 하이라이트 및 지도 업데이트를 위한 클릭 이벤트 추가
-              // 여기에는 필요 없는 코드임
-              // tr.onclick = () =>
-              //   highlightClientData(
-              //     index,
-              //     parseFloat(row[2]),
-              //     parseFloat(row[1])
-              //   );
-              // #30 fix: 수리모형 팀에서 위도, 경도를 -> 경도, 위도로 거꾸로 저장해서 row[2], row[1] 순서대로 변수 값 넣음
-
-              table.appendChild(tr);
+            Promise.all(dataRows).then((processedRows) => {
+              processedRows.forEach((row) => {
+                const tr = document.createElement("tr");
+                row.forEach((cell) => {
+                  const td = document.createElement("td");
+                  td.textContent = cell;
+                  tr.appendChild(td);
+                });
+                table.appendChild(tr);
+              });
             });
           })
           .catch((error) => {
@@ -914,7 +925,7 @@
       var markers = []; // Global array to hold markers
       var selectedMarker = null; // To keep track of the selected marker
       var stompClient; // #30-2 미리 선언
-      var confirmedDataLoaded = false; //#30-2 fix: loadConfirmedOrderData함수가 실행된 후, highlightClientData함수가 실행되어야 함
+      // var confirmedDataLoaded = false; //#30-2 fix: loadConfirmedOrderData함수가 실행된 후, highlightClientData함수가 실행되어야 함
 
       // #39 심야, 오전, 오후  -> 3가지 데이터를 나누어서 고객 주문 확인 지도와 배달 기사 지도에 표시하기
       // let selectedFile = "";
@@ -1013,14 +1024,13 @@
               .filter((line) => line);
 
             // headers 값과 rows 값 뽑기
+            // Extract headers and rows
             const headers = [
               "CUST NO.",
-              "XCOORD.",
-              "YCOORD.",
               "DEMAND",
               "READY TIME",
               "DUE DATE",
-              "SERVICE TIME",
+              "도로명주소", // Add 도로명주소
             ];
             const rows = [];
             let parsingCustomers = false;
@@ -1030,21 +1040,21 @@
                 parsingCustomers = true;
               } else if (parsingCustomers) {
                 const parts = line.split(/\s+/);
-                if (parts.length === headers.length) {
+                if (parts.length === 7) {
+                  // Adjust to match the length of the existing headers
                   rows.push(parts);
                 }
               }
             });
 
             // Filter out the first row with "CUST NO." 0
-            // #30 fix: 1번째 행(즉, CUST NO.가 0인 행)은 표와 지도에도 모두 표시하지 말기
             const filteredRows = rows.filter((row) => row[0] !== "0");
 
-            // 테이블 생성 및 값 채우기
+            // Create and populate the table
             const table = document.getElementById("confirmedOrderTable");
             table.innerHTML = ""; // Clear previous data
 
-            // header row 만들기
+            // Create header row
             const headerRow = document.createElement("tr");
             headers.forEach((header) => {
               const th = document.createElement("th");
@@ -1053,25 +1063,47 @@
             });
             table.appendChild(headerRow);
 
-            // data rows 채우기
-            filteredRows.forEach((row, index) => {
-              const tr = document.createElement("tr");
-              row.forEach((cell) => {
-                const td = document.createElement("td");
-                td.textContent = cell;
-                tr.appendChild(td);
-              });
+            // Process data rows
+            const dataRows = filteredRows.map((row) => {
+              const lat = row[2];
+              const lon = row[1];
+              const demand = row[3];
+              const readyTime = row[4];
+              const dueDate = row[5];
 
-              // #30-2 테이블 클릭하면, 지도에 표시되도록
-              // Add click event for dynamic highlighting and map interaction
-              tr.onclick = () =>
-                highlightClientData(
-                  index,
-                  parseFloat(row[2]),
-                  parseFloat(row[1])
-                );
-              // #30 fix: 수리모형 팀에서 위도, 경도를 -> 경도, 위도로 거꾸로 저장해서 row[2], row[1] 순서대로 변수 값 넣음
-              table.appendChild(tr);
+              return getAddress(lat, lon).then((address) => {
+                return {
+                  rowData: [
+                    row[0], // CUST NO.
+                    demand,
+                    readyTime,
+                    dueDate,
+                    address, // 도로명주소
+                  ],
+                  lat: lat,
+                  lon: lon,
+                };
+              });
+            });
+
+            Promise.all(dataRows).then((processedRows) => {
+              processedRows.forEach((data, index) => {
+                const tr = document.createElement("tr");
+                data.rowData.forEach((cell) => {
+                  const td = document.createElement("td");
+                  td.textContent = cell;
+                  tr.appendChild(td);
+                });
+
+                // Add click event for dynamic highlighting and map interaction
+                tr.onclick = () =>
+                  highlightClientData(
+                    index,
+                    parseFloat(data.lat),
+                    parseFloat(data.lon)
+                  );
+                table.appendChild(tr);
+              });
             });
           })
           .catch((error) => {
@@ -1290,9 +1322,8 @@
 
         // #30 fix: 1번째 행(즉, CUST NO.가 0인 행)은 표와 지도에도 모두 표시하지 말기
         rows
-          .filter((row) => row[0] !== "0")
+          .filter((row) => row[0] !== "0") // Exclude the first row
           .forEach((row, index) => {
-            // Exclude the first row
             // #30 fix: 수리모형 팀에서 위도, 경도를 -> 경도, 위도로 거꾸로 저장해서 row[2], row[1] 순서대로 변수 값 넣음
             const lat = parseFloat(row[2]);
             const lon = parseFloat(row[1]);
