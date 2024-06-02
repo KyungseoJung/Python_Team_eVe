@@ -5,9 +5,10 @@
 #41 현재시간 기준으로 배달 관련 csv 파일 3가지 중 하나를 가져오기
 
 '''
-from flask import Flask, render_template, send_from_directory, abort
+from flask import Flask, render_template, send_from_directory, abort, jsonify
 import pandas as pd
 from datetime import datetime   #41
+import json # 44
 
 app = Flask(__name__)
 
@@ -30,7 +31,17 @@ def select_csv_file():
     else:
         raise ValueError("Invalid time range")
 
-
+def select_json_file():
+    current_time = get_current_time_in_minutes()
+    if 0 <= current_time < 480:
+        return BASE_PATH + "drawroute_E_01.json"
+    elif 480 <= current_time < 960:
+        return BASE_PATH + "drawroute_E_02.json"
+    elif 960 <= current_time < 1440:
+        return BASE_PATH + "drawroute_E_03.json"
+    else:
+        raise ValueError("Invalid time range")
+    
 #26 CSV 파일 로드해서 데이터를 보내는 함수 - 절대적인 경로에서 데이터 파일을 가져오도록 구조 변경
 @app.route('/deliveries')
 def deliveries():
@@ -38,11 +49,20 @@ def deliveries():
 
     #41 Extract the filename from the selected file path
     # '/'로 자른 목록들 중 - 목록의 마지막 요소를 검색하는 목록 인덱싱
-    filename = selected_csv_file.split('/')[-1]
-    return send_from_directory(BASE_PATH, filename)
+    csvFileName = selected_csv_file.split('/')[-1]
+    return send_from_directory(BASE_PATH, csvFileName)
 
     # # CSV 파일 경로가 정확하고 서버 관점에서 액세스 가능한지 확인하도록!
     # return send_from_directory('C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/static', 'deliveries.csv')
+
+# //#44
+@app.route('/drawroute')
+def routes():
+    selected_json_file = select_json_file()
+    with open(selected_json_file, 'r', encoding='utf-8') as file:
+        data = json.load(file)
+    return jsonify(data)
+
 
 # # //#33 Driver 여러 명 페이지
 # def load_deliveries():
@@ -85,4 +105,5 @@ def client_page(driver_id):
 #     return render_template('screen_Driver.html')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0", debug=True)
+    # app.run(debug=True)

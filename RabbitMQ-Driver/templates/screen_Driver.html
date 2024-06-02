@@ -21,6 +21,7 @@
 
 #35 고객 화면과 Driver 화면에서 코드 추가 - 모바일 웹 화면으로 확인할 때, 페이지 연결 및 구조가 적절히 보이도록
 #42 각 배달원이 무슨 번호의 배터리를 배달 or 수거해야 하는지 표시
+#44 배달원 화면에서 지도에 각 배달원이 가야 하는 경로 표시
 -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -37,6 +38,10 @@
 
     <!-- //#17-5 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+    <!-- //#44 -->
+    <!-- <script src="https://apis.openapi.sk.com/tmap/js?version=2&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu"></script> -->
+    <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu"></script>
 
     <style>
       /* #35 모바일 웹 화면으로 보이도록 */
@@ -250,6 +255,12 @@
         var deliveries = []; // #17-5  //#33-4 각각의 Driver페이지에 driver_id에 맞게 자신에게 할당된 업무만 나타나도록
         var currentIndex = 0; // #17-5 현재 데이터 순서를 확인하기 위한 변수
         var marker; //#23 최신 위치에 해당하는 marker가 지도에 1개만 표시되도록
+
+        // #44 지도 표시하기 위한 변수 지정
+        var driverMap;
+        var routeLayers = [];
+        var currentRouteIndex = 0;
+        var totalRoute = [];
 
         var driverId = "{{ driverId }}"; //#33 Jinja2 템플릿 구문을 사용하여 변수 값을 직접 받아오기.
         console.log("//#22 Flask로부터 전달받은 driverId 값: " + driverId);
@@ -590,21 +601,134 @@
         // // 초기 정보 표시 및 업데이트  // #17-5 csv 파일 가져온 후 실행되도록 Papa.parse 함수 안에 넣기
         // updateDeliveryInfo();
 
+        // #44 배달원 화면에서 지도에 각 배달원이 가야 하는 경로 표시 - 여기부터
+        // function fetchRouteData(callback) {
+        //   // var url = `/drawroute`;
+        //   // var jsonFile = `drawroute_E_01.json`;
+        //   fetch("/drawroute")
+        //     .then((response) => response.json())
+        //     .then((data) => callback(data))
+        //     .catch((error) => console.error("Error loading the JSON:", error));
+        // }
+        function fetchRouteData(driverId, callback) {
+          var url = `/drawroute`;
+          fetch(url)
+            .then((response) => response.json())
+            .then((data) => {
+              console.log("//#44 Fetched route data: ", data); // 데이터 확인을 위한 콘솔 출력
+              callback(data[driverId]); // 특정 driverId의 경로 데이터만 전달
+            })
+            .catch((error) => console.error("Error loading the JSON:", error));
+        }
+
+        function drawRoute(driverRoutes) {
+          if (!driverMap) {
+            console.error("Map is not initialized");
+            return;
+          }
+
+          totalRoute = [];
+          routeLayers.forEach((layer) => layer.setMap(null));
+          routeLayers = [];
+
+          var start = driverRoutes[currentRouteIndex];
+          var end = driverRoutes[currentRouteIndex + 1];
+
+          if (!start || !end) {
+            console.error("Start or end location is missing");
+            return;
+          }
+
+          var url = `https://apis.openapi.sk.com/tmap/routes?version=1&format=json&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu&startX=${start.longitude}&startY=${start.latitude}&endX=${end.longitude}&endY=${end.latitude}&reqCoordType=WGS84GEO&resCoordType=WGS84GEO&searchOption=0`;
+
+          fetch(url)
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.features) {
+                var features = data.features;
+                var routePath = [];
+
+                features.forEach(function (feature) {
+                  if (feature.geometry.type === "LineString") {
+                    feature.geometry.coordinates.forEach(function (coord) {
+                      var latLng = new Tmapv2.LatLng(coord[1], coord[0]);
+                      routePath.push(latLng);
+                      totalRoute.push(latLng);
+                    });
+                  }
+                });
+
+                var polyline = new Tmapv2.Polyline({
+                  path: routePath,
+                  strokeColor: "#ff0000",
+                  strokeWeight: 6,
+                  map: driverMap,
+                });
+
+                routeLayers.push(polyline);
+
+                var marker = new Tmapv2.Marker({
+                  position: new Tmapv2.LatLng(end.latitude, end.longitude),
+                  map: driverMap,
+                  icon: "/static/image/redMarker.png",
+                  title: `Stop ${currentRouteIndex + 2}`,
+                });
+
+                routeLayers.push(marker);
+
+                driverMap.setCenter(
+                  new Tmapv2.LatLng(start.latitude, start.longitude)
+                );
+              } else {
+                console.error("Error fetching route: No features found");
+              }
+            })
+            .catch((error) => console.error("Error fetching route:", error));
+        }
+
+        function showNextRoute() {
+          var driverId = "{{ driverId }}";
+          fetchRouteData(driverId, function (routeData) {
+            if (currentRouteIndex < routeData.length - 1) {
+              drawRoute(routeData);
+              currentRouteIndex++;
+            } else {
+              alert("모든 경로를 완료했습니다.");
+            }
+          });
+        }
+        // #44 배달원 화면에서 지도에 각 배달원이 가야 하는 경로 표시 - 여기까지
         //#23 T-Map 시작 & 웹소켓 연결
         function initTmap() {
-          map = new Tmapv3.Map("map_div", {
-            center: new Tmapv3.LatLng(37.5665, 126.978),
+          // map = new Tmapv3.Map("map_div", {
+          // center: new Tmapv3.LatLng(37.5665, 126.978),
+          driverMap = new Tmapv2.Map("map_div", {
+            center: new Tmapv2.LatLng(37.5665, 126.978),
             width: "100%",
             height: "100%",
             zoom: 16,
           });
+
+          // #44 배달원 화면에서 지도에 각 배달원이 가야 하는 경로 표시
+          var driverId = "{{ driverId }}";
+          fetchRouteData(driverId, function (routeData) {
+            if (routeData.length > 1) {
+              drawRoute(routeData);
+            } else {
+              console.error("Insufficient route data to display");
+            }
+          });
+
           // connectToRabbitMQ(); // -> script 마지막 부분에 실행함
-          setInterval(getDriverPos, 10000); // Get User Position every 10 seconds // 10초에 한번씩 위치 받기
+          // setInterval(getDriverPos, 10000); // Get User Position every 10 seconds // 10초에 한번씩 위치 받기 -> 지도 중심 맞추기
         }
 
+        showNextRoute();
         // [배달 완료] 및 [수거 완료] 버튼에 이벤트 리스너 추가
         deliveryCompleteBtn.addEventListener("click", function () {
           sendStateToClientRabbitMQ("배달완료"); // #19 버튼을 누르면, RabbitMQ로 메시지 송신
+
+          showNextRoute(); // #44 버튼을 누르면 다음 이동 경로 표시
 
           // if (currentIndex < deliveries.length - 1) {
           if (currentIndex < deliveries.length) {
@@ -631,6 +755,8 @@
 
         pickupCompleteBtn.addEventListener("click", function () {
           sendStateToClientRabbitMQ("수거완료"); // #19 버튼을 누르면, RabbitMQ로 메시지 송신
+
+          showNextRoute(); // #44 버튼을 누르면 다음 이동 경로 표시
 
           // if (currentIndex < deliveries.length - 1) {
           if (currentIndex < deliveries.length) {
