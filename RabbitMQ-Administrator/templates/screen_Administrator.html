@@ -34,7 +34,7 @@
   관리자 페이지 - [주문 현황], [배달 현황] 페이지에서는 현재 시간대의 데이터만 표시하도록
 
 #41 현재시간 기준으로 배달 관련 csv 파일 3가지 중 하나를 가져오기
-
+#43 현재 시간대의 배달기사 경로 표시
 -->
 
 <!DOCTYPE html>
@@ -56,6 +56,9 @@
 
     <!-- //#33 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+    <!-- //#43 -->
+    <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu"></script>
 
     <style>
       /* //#27
@@ -321,6 +324,14 @@
       .segment.complete {
         background-color: #4caf50; /* Green background for completed segments */
       }
+      /* #43 현재 시간대의 배달기사 경로 표시 */
+      #driverMapDiv {
+        width: 100%;
+        height: 400px;
+      }
+      .controls {
+        margin-bottom: 10px;
+      }
 
       /* ============= //#33 [배달 현황] 페이지 - 여기까지 ============= */
 
@@ -507,6 +518,45 @@
               >
                 오후 Map
               </button> -->
+              <!-- //#43 현재 시간대의 배달기사 경로 표시 - 토글을 이용해 각 Driver 경로 표시 확인 -->
+              <div class="controls">
+                <label
+                  ><input
+                    type="checkbox"
+                    id="driver1"
+                    onclick="toggleRoute('1')"
+                    checked
+                  />
+                  Driver 1</label
+                >
+                <label
+                  ><input
+                    type="checkbox"
+                    id="driver2"
+                    onclick="toggleRoute('2')"
+                    checked
+                  />
+                  Driver 2</label
+                >
+                <label
+                  ><input
+                    type="checkbox"
+                    id="driver3"
+                    onclick="toggleRoute('3')"
+                    checked
+                  />
+                  Driver 3</label
+                >
+                <label
+                  ><input
+                    type="checkbox"
+                    id="driver4"
+                    onclick="toggleRoute('4')"
+                    checked
+                  />
+                  Driver 4</label
+                >
+              </div>
               <div id="driverMapDiv" style="width: 100%; height: 400px"></div>
             </div>
           </div>
@@ -916,6 +966,23 @@
         return selectedCsvFile;
       }
 
+      // #43 현재 시간대의 배달기사 경로 표시 & Tmapv3 -> Tmapv2로 변경 및 사용
+      function setJsonFileByTime() {
+        const currentTimeMinutes = getCurrentTimeInMinutes();
+        let selectedJsonFile;
+
+        if (currentTimeMinutes >= 0 && currentTimeMinutes < 480) {
+          selectedJsonFile = "drawroute_E_01.json";
+        } else if (currentTimeMinutes >= 480 && currentTimeMinutes < 960) {
+          selectedJsonFile = "drawroute_E_02.json";
+        } else if (currentTimeMinutes >= 960 && currentTimeMinutes < 1440) {
+          selectedJsonFile = "drawroute_E_03.json";
+        }
+
+        console.log("//#41 선택한 시간대의 json 파일: " + selectedJsonFile);
+        return selectedJsonFile;
+      }
+
       // // #30 latitude,longitude를 통해서 "도로명 주소"를 column으로 나타내기
       // function loadConfirmedOrderData() {
       //   fetch("/static/orders.csv")
@@ -1258,12 +1325,24 @@
               const centerLat = latSum / validCount;
               const centerLon = lonSum / validCount;
 
+              // #43 Tmapv3 -> Tmapv2로 변경 및 사용
+              // if (orderMap) {
+              //   orderMap.setCenter(new Tmapv3.LatLng(centerLat, centerLon));
+              //   clearMarkers(); // Clear old markers
+              // } else {
+              //   orderMap = new Tmapv3.Map("orderMapDiv", {
+              //     center: new Tmapv3.LatLng(centerLat, centerLon),
+              //     width: "100%",
+              //     height: "400px",
+              //     zoom: 12,
+              //   });
+              // }
               if (orderMap) {
-                orderMap.setCenter(new Tmapv3.LatLng(centerLat, centerLon));
+                orderMap.setCenter(new Tmapv2.LatLng(centerLat, centerLon));
                 clearMarkers(); // Clear old markers
               } else {
-                orderMap = new Tmapv3.Map("orderMapDiv", {
-                  center: new Tmapv3.LatLng(centerLat, centerLon),
+                orderMap = new Tmapv2.Map("orderMapDiv", {
+                  center: new Tmapv2.LatLng(centerLat, centerLon),
                   width: "100%",
                   height: "400px",
                   zoom: 12,
@@ -1323,9 +1402,18 @@
             const lat = parseFloat(row[2]);
             const lon = parseFloat(row[1]);
 
+            // #43 Tmapv3 -> Tmapv2로 변경 및 사용
+            // if (!isNaN(lat) && !isNaN(lon)) {
+            //   const marker = new Tmapv3.Marker({
+            //     position: new Tmapv3.LatLng(lat, lon),
+            //     map: orderMap,
+            //     label: `Customer ${row[0]}`,
+            //   });
+            //   markers.push(marker); // Save marker
+            // }
             if (!isNaN(lat) && !isNaN(lon)) {
-              const marker = new Tmapv3.Marker({
-                position: new Tmapv3.LatLng(lat, lon),
+              const marker = new Tmapv2.Marker({
+                position: new Tmapv2.LatLng(lat, lon),
                 map: orderMap,
                 label: `Customer ${row[0]}`,
               });
@@ -1366,13 +1454,23 @@
             if (selectedMarker) {
               selectedMarker.setMap(null); // Remove the old marker
 
-              let newMarker = new Tmapv3.Marker({
-                position: new Tmapv3.LatLng(
+              // #43 Tmapv3 -> Tmapv2로 변경 및 사용
+              // let newMarker = new Tmapv3.Marker({
+              //   position: new Tmapv3.LatLng(
+              //     selectedMarker.getPosition().lat(),
+              //     selectedMarker.getPosition().lng()
+              //   ),
+              //   map: orderMap,
+              // });
+
+              let newMarker = new Tmapv2.Marker({
+                position: new Tmapv2.LatLng(
                   selectedMarker.getPosition().lat(),
                   selectedMarker.getPosition().lng()
                 ),
                 map: orderMap,
               });
+
               markers[selectedMarkerIndex] = newMarker; // Replace the old marker with the new one
             }
 
@@ -1380,13 +1478,20 @@
             selectedMarker = markers[index];
             selectedMarkerIndex = index; // Keep track of the selected index
             selectedMarker.setMap(null); // Remove the old marker
-            selectedMarker = new Tmapv3.Marker({
-              position: new Tmapv3.LatLng(lat, lon),
+            // #43 Tmapv3 -> Tmapv2로 변경 및 사용
+            // selectedMarker = new Tmapv3.Marker({
+            //   position: new Tmapv3.LatLng(lat, lon),
+            //   map: orderMap,
+            //   // icon: "https://cdn-icons-png.flaticon.com/128/14034/14034740.png",
+            //   icon: "/static/image/redMarker.png",
+            //   // size: new Tmapv3.Size(0.1, 0.1), // 아이콘의 크기 설정
+            // });
+            selectedMarker = new Tmapv2.Marker({
+              position: new Tmapv2.LatLng(lat, lon),
               map: orderMap,
-              // icon: "https://cdn-icons-png.flaticon.com/128/14034/14034740.png",
               icon: "/static/image/redMarker.png",
-              // size: new Tmapv3.Size(0.1, 0.1), // 아이콘의 크기 설정
             });
+
             markers[index] = selectedMarker; // Update the array with the new highlighted marker
           }, 2000); // 2초 지연
         } else {
@@ -1395,13 +1500,22 @@
           if (selectedMarker) {
             selectedMarker.setMap(null); // Remove the old marker
 
-            let newMarker = new Tmapv3.Marker({
-              position: new Tmapv3.LatLng(
+            // #43 Tmapv3 -> Tmapv2로 변경 및 사용
+            // let newMarker = new Tmapv3.Marker({
+            //   position: new Tmapv3.LatLng(
+            //     selectedMarker.getPosition().lat(),
+            //     selectedMarker.getPosition().lng()
+            //   ),
+            //   map: orderMap,
+            // });
+            let newMarker = new Tmapv2.Marker({
+              position: new Tmapv2.LatLng(
                 selectedMarker.getPosition().lat(),
                 selectedMarker.getPosition().lng()
               ),
               map: orderMap,
             });
+
             markers[selectedMarkerIndex] = newMarker; // Replace the old marker with the new one
           }
 
@@ -1409,13 +1523,23 @@
           selectedMarker = markers[index];
           selectedMarkerIndex = index; // Keep track of the selected index
           selectedMarker.setMap(null); // Remove the old marker
-          selectedMarker = new Tmapv3.Marker({
-            position: new Tmapv3.LatLng(lat, lon),
+
+          // #43 Tmapv3 -> Tmapv2로 변경 및 사용
+          // selectedMarker = new Tmapv3.Marker({
+          //   position: new Tmapv3.LatLng(lat, lon),
+          //   map: orderMap,
+          //   // icon: "https://cdn-icons-png.flaticon.com/128/14034/14034740.png",
+          //   icon: "/static/image/redMarker.png",
+          //   size: new Tmapv3.Size(0.1, 0.1), // 아이콘의 크기 설정
+          // });
+          selectedMarker = new Tmapv2.Marker({
+            position: new Tmapv2.LatLng(lat, lon),
             map: orderMap,
             // icon: "https://cdn-icons-png.flaticon.com/128/14034/14034740.png",
             icon: "/static/image/redMarker.png",
-            size: new Tmapv3.Size(0.1, 0.1), // 아이콘의 크기 설정
+            size: new Tmapv2.Size(0.1, 0.1), // 아이콘의 크기 설정
           });
+
           markers[index] = selectedMarker; // Update the array with the new highlighted marker
         }
       }
@@ -1587,6 +1711,134 @@
       var drivers = []; // #33 driverId 고유값들로만 이루어진 배열(Array)
       var driverMap; // #33-1 배달기사들의 위치를 지도에 표시
       var driverMarkers = {}; // #33-1 배달기사들의 위치를 마커로 표시
+
+      // #43 현재 시간대의 배달기사 경로 표시(routeLayers, totalRoute, colors 지정)
+      var routeLayers = [];
+      var totalRoute = {};
+      var driverRouteAppKey = "5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu";
+
+      var colors = {
+        1: "#FF0000", // 빨강
+        2: "#00FF00", // 초록
+        3: "#0000FF", // 파랑
+        4: "#FFFF00", // 노랑
+      };
+
+      // #43 현재 시간대의 배달기사 경로 표시 - 경로 데이터 가져오기 및 저장
+      function fetchRouteData() {
+        // 현재 시간대를 기준으로 데이터 파일 선택
+        const selectedJsonFile = setJsonFileByTime();
+
+        fetch(`/static/${selectedJsonFile}`)
+          .then((response) => response.json())
+          .then((routes) => {
+            var delay = 0;
+            for (var driver in routes) {
+              var driverRoutes = routes[driver];
+              var driverColor = colors[driver];
+              setTimeout(
+                function (driver, driverRoutes, driverColor) {
+                  drawRoute(driver, driverRoutes, driverColor);
+                },
+                delay,
+                driver,
+                driverRoutes,
+                driverColor
+              );
+              delay += 1000; // Add a delay between requests
+            }
+          })
+          .catch((error) => console.error("Error loading routes:", error));
+      }
+
+      // #43 현재 시간대의 배달 기사 경로 표시 - 지도에 경로 그리기
+      function drawRoute(driver, driverRoutes, color) {
+        if (!driverMap) {
+          console.error("Map is not initialized");
+          return;
+        }
+
+        totalRoute[driver] = [];
+        routeLayers[driver] = [];
+
+        var requestQueue = [];
+        for (var i = 0; i < driverRoutes.length - 1; i++) {
+          var start = driverRoutes[i];
+          var end = driverRoutes[i + 1];
+
+          var startX = start.longitude;
+          var startY = start.latitude;
+          var endX = end.longitude;
+          var endY = end.latitude;
+
+          var url = `https://apis.openapi.sk.com/tmap/routes?version=1&format=json&appKey=${driverRouteAppKey}&startX=${startX}&startY=${startY}&endX=${endX}&endY=${endY}&reqCoordType=WGS84GEO&resCoordType=WGS84GEO&searchOption=0`;
+
+          requestQueue.push(fetch(url).then((response) => response.json()));
+        }
+
+        Promise.all(requestQueue)
+          .then((results) => {
+            results.forEach((data) => {
+              if (data.features) {
+                var features = data.features;
+                var routePath = [];
+
+                features.forEach(function (feature) {
+                  if (feature.geometry.type === "LineString") {
+                    feature.geometry.coordinates.forEach(function (coord) {
+                      var latLng = new Tmapv2.LatLng(coord[1], coord[0]);
+                      routePath.push(latLng);
+                      totalRoute[driver].push(latLng);
+                    });
+                  }
+                });
+
+                var polyline = new Tmapv2.Polyline({
+                  path: routePath,
+                  strokeColor: color,
+                  strokeWeight: 4,
+                  map: driverMap,
+                });
+
+                routeLayers[driver].push(polyline);
+              } else {
+                console.error("Error fetching route: No features found");
+              }
+            });
+
+            // Add markers for the route
+            driverRoutes.forEach((point, index) => {
+              var isDepot = index === 0 || index === driverRoutes.length - 1;
+              var iconUrl = isDepot
+                ? "/static/image/location_26px.png"
+                : "/static/image/location-pin_26px.png";
+
+              var marker = new Tmapv2.Marker({
+                position: new Tmapv2.LatLng(point.latitude, point.longitude),
+                map: driverMap,
+                title: `Driver ${driver} - Stop ${index + 1}`,
+                icon: iconUrl,
+              });
+              routeLayers[driver].push(marker);
+            });
+
+            // Set map bounds to fit the route
+            var bounds = new Tmapv2.LatLngBounds();
+            totalRoute[driver].forEach(function (point) {
+              bounds.extend(point);
+            });
+            driverMap.fitBounds(bounds);
+          })
+          .catch((error) => console.error("Error fetching route:", error));
+      }
+
+      // #43 현재 시간대의 배달 기사 경로 표시 - 각 운전자의 경로 표시 여부 따로 확인하기 위함
+      function toggleRoute(driver) {
+        var isChecked = document.getElementById(`driver${driver}`).checked;
+        routeLayers[driver].forEach((layer) => {
+          layer.setMap(isChecked ? driverMap : null);
+        });
+      }
 
       // #33 Driver들의 위치 얻기
       function subscribeDriverTopics() {
@@ -1942,12 +2194,24 @@
               const centerLat = latSum / validCount;
               const centerLon = lonSum / validCount;
 
+              // #43 Tmapv3 -> Tmapv2로 변경 및 사용
+              // if (driverMap) {
+              //   driverMap.setCenter(new Tmapv3.LatLng(centerLat, centerLon));
+              //   clearMarkers(); // Clear old markers
+              // } else {
+              //   driverMap = new Tmapv3.Map("driverMapDiv", {
+              //     center: new Tmapv3.LatLng(centerLat, centerLon),
+              //     width: "100%",
+              //     height: "400px",
+              //     zoom: 12,
+              //   });
+              // }
               if (driverMap) {
-                driverMap.setCenter(new Tmapv3.LatLng(centerLat, centerLon));
+                driverMap.setCenter(new Tmapv2.LatLng(centerLat, centerLon));
                 clearMarkers(); // Clear old markers
               } else {
-                driverMap = new Tmapv3.Map("driverMapDiv", {
-                  center: new Tmapv3.LatLng(centerLat, centerLon),
+                driverMap = new Tmapv2.Map("driverMapDiv", {
+                  center: new Tmapv2.LatLng(centerLat, centerLon),
                   width: "100%",
                   height: "400px",
                   zoom: 12,
@@ -1959,6 +2223,16 @@
             }
           })
           .catch((error) => console.error("Error loading data:", error));
+
+        // #43 지도가 완전히 initialize 된 이후에 배달원들의 경로 그리기
+        // #43 Tmapv3는 addLisnener를 사용하고, Tmapv2는 addEvent를 사용한다.
+        // Fetch route data after initializing the map
+        setTimeout(() => {
+          fetchRouteData(); // Fetch route data only after the map is idle (fully loaded)
+        }, 3000);
+        // driverMap.addEvent("idle", function () {
+        //   fetchRouteData(); // Fetch route data only after the map is idle (fully loaded)
+        // });
       }
 
       // #33-1 Driver 위치 표시
@@ -1970,11 +2244,16 @@
           console.log("//#33-1 드라이버" + driverId + "에 대해서 마커 삭제");
         }
 
-        var driverLocation = new Tmapv3.LatLng(latitude, longitude);
+        // #43 Tmapv3 -> Tmapv2로 변경 및 사용
+        // var driverLocation = new Tmapv3.LatLng(latitude, longitude);
+        var driverLocation = new Tmapv2.LatLng(latitude, longitude);
+
         console.log(
           "//#33-1 드라이버" + driverId + "의 위치를 지도에 마커로 표시"
         );
-        var newDriverMarker = new Tmapv3.Marker({
+        // #43 Tmapv3 -> Tmapv2로 변경 및 사용
+        // var newDriverMarker = new Tmapv3.Marker({
+        var newDriverMarker = new Tmapv2.Marker({
           icon: "https://cdn-icons-png.flaticon.com/128/14975/14975104.png",
           label: "Driver" + driverId, // #33-1 driverId를 바탕으로 배달 기사들 표시
           position: driverLocation,
@@ -1984,6 +2263,9 @@
         // Update the marker in the global object
         driverMarkers[driverId] = newDriverMarker;
       }
+
+      // initDriverMap(); // Initialize the map  // #43 그냥 바로 실행되도록
+      // fetchRouteData(); // #43 현재 시간대의 배달기사 경로 표시 - Fetch route data after initializing the map
 
       //  ============= //#33 [배달 현황] 페이지 - 여기까지 =============
 

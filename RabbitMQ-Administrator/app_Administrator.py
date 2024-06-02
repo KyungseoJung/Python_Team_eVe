@@ -1,9 +1,12 @@
 # // T-Map appkey = 5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu 
 
+
+'''
 # //#26 관리자(Administrator) 웹화면 디자인 구성 
 # //#27 관리자 웹페이지 디자인 
 # //#28 수리모형 코드 통합 - [경로 계산하기] 버튼 누르면, 수리모형 코드 실행되도록 - csv 파일 지정한 파일 위치에 저장되도록
 # //#29 배터리 강화학습 코드 통합
+
 
 # //#38 RabbitMQ를 통해 고객 화면으로부터 수신한 주문 정보를 txt 파일에 추가
 # (서비스 요청 시간에 따라 각각 다른 파일에 저장)
@@ -11,12 +14,17 @@
 # - 서비스 요청 시간이 480~900인 경우: E_02.txt 파일
 # - 서비스 요청 시간이 960~1380인 경우: E_03.txt 파일
 
+# //#43 현재 시간대의 배달기사 경로 표시
+
+'''
+
+
 
 # from flask import Flask, render_template
 # from flask import jsonify, request # //#28 수리모형 코드 통합을 위한 import
 
 import pandas as pd
-import eve_0601_test # //#28 수리모형 코드 통합 (Import 수리모형 함수를 포함한 Python file )
+import eve_0602_test # //#28 수리모형 코드 통합 (Import 수리모형 함수를 포함한 Python file )
 
 import pandas as pd
 from datetime import datetime
@@ -374,16 +382,18 @@ def calculate_path():
         # import eve_0521_test
     try:
         # //#28 내가 불러올 데이터
-        datafile = "C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/orderData/E_01.txt"
+        datafile = "C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/static/orderData/E_02.txt"
 
         # //#28 내가 지정하는 경로 (파일 저장)
         # //#28 fix: pickle_path 코드 수정 - 주석 처리
         # pickle_path = "C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/static/all_k_shortest_paths.pickle_S_02"
         battery_csv_path = "C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/static/"
         truck_csv_path = "C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/static/"
+        drawroute_json_path = "C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/static/"   # //#43 현재 시간대의 배달기사 경로 표시 위해 필요한 json 파일
 
         # eve_0522_test3.solve(datafile, pickle_path, battery_csv_path, truck_csv_path) # //#28 fix: pickle_path 코드 수정 - 주석 처리 
-        eve_0601_test.solve(datafile, battery_csv_path, truck_csv_path)
+        # //#43 현재 시간대의 배달기사 경로 표시 위해 필요한 json 파일 경로 추가ㅠ
+        eve_0602_test.solve(datafile, battery_csv_path, truck_csv_path, drawroute_json_path )
 
         # Assuming there's a function in eve_0522_test.py to calculate the path and save a CSV
         # result = eve_0522_test.calculate_and_save()
@@ -398,4 +408,6 @@ def administrator_page():
 
 
 if __name__ == '__main__':
-    app.run(port=5004,debug=True)
+    app.run(host="0.0.0.0", port=5004,debug=True)
+
+    # host ="0.0.0.0"    - ipconfig를 통해 IPV4 주소로 접속 가능

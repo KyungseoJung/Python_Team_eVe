@@ -1031,7 +1031,7 @@ class two_phase_heuristic:
     def elecvery_initial_solution(self):
         initial_solutions = []
         route, battery_route, battery_used_capacity = self.elecvery()
-        energy, variable_names, variable_values = self.calculate_objective(route, battery_route)
+        energy, variable_names, variable_values = self.calculate_objective_CT1(route, battery_route)
         if energy is not None:
             print("***** elecvery_energy:", energy)
             initial_solutions.append(("elecvery", energy, route, battery_route, battery_used_capacity, variable_names, variable_values))
@@ -2247,7 +2247,7 @@ class two_phase_heuristic:
                         writer.writerow([key] + sublist)
 
             # truck csv
-            headers = ['driver_id', 'client_id', 'delivery_type', 'latitude', 'longitude', 'time']
+            headers = ['driver_id', 'client_id', 'delivery_type', 'latitude', 'longitude', 'time' ,'battery_id']
 
             def determine_delivery_type(stop):
                 return '수거' if 'h' in stop else '배달'
@@ -2256,6 +2256,14 @@ class two_phase_heuristic:
                 hours = int(minutes) // 60
                 minutes = int(minutes) % 60
                 return f"{hours:02d}:{minutes:02d}"
+            def get_j_from_time_key(values, tkey):
+                # time_key에 해당하는 key 찾기
+                key = f'z_{tkey}_'
+                for k in values.keys():
+                    if k.startswith(key):
+                        # key에서 j 값을 추출
+                        j_value = k.split('_')[-1]
+                        return j_value
             
             truck_csv_filename = os.path.join(self.truck_csv_path, f'Truck_routes_{base_name}.csv')
             
@@ -2272,10 +2280,14 @@ class two_phase_heuristic:
                             client_id = stop.replace('h', '')  # 'h' 제거하여 클라이언트 ID 얻기
                             latitude = self.y_coord[int(client_id)-1]  # client_id에 해당하는 x_coord 가져오기
                             longitude = self.x_coord[int(client_id)-1]  # client_id에 해당하는 y_coord 가져오기
-                            time_key = stop if 'h' not in stop else stop[2:]  # 'h'가 있으면 'h'를 제외하고 가져오기
+                            if stop.startswith('h'):
+                                time_key = stop[1:]
+                            else:
+                                time_key= (stop)
                             time_minutes = u_value_1['u_'+stop]  # 시간 정보 가져오기
                             time = minutes_to_time(time_minutes)  # 시간을 시:분 형식의 문자열로 변환
-                            writer.writerow([driver_id, client_id, delivery_type, latitude, longitude, time])
+                            battery_id = get_j_from_time_key(z_values, time_key)
+                            writer.writerow([driver_id, client_id, delivery_type, latitude, longitude, time , battery_id])
             print(f"데이터가 {truck_csv_filename} 파일에 저장되었습니다.")
 
             # draw route json
