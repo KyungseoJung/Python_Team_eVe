@@ -2,7 +2,7 @@
 
 #35 고객 화면과 Driver 화면에서 코드 추가 - 모바일 웹 화면으로 확인할 때, 페이지 연결 및 구조가 적절히 보이도록
 
-#41 현재시간 기준으로 배달 관련 csv 파일 가져오기
+#41 현재시간 기준으로 배달 관련 csv 파일 3가지 중 하나를 가져오기
 
 '''
 from flask import Flask, render_template, send_from_directory, abort
