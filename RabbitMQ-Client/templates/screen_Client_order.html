@@ -275,16 +275,16 @@
     <div class="popup" id="product-popup">
       <div class="popup-content">
         <h3>충전 상품 선택</h3>
-        <div class="list-item" onclick="selectProduct('20 Kwh', '10,700원')">
+        <div class="list-item" onclick="selectProduct('20', '10,700원')">
           20 Kwh - 예상 10,700원
         </div>
-        <div class="list-item" onclick="selectProduct('30 Kwh', '15,900원')">
+        <div class="list-item" onclick="selectProduct('30', '15,900원')">
           30 Kwh - 예상 15,900원
         </div>
-        <div class="list-item" onclick="selectProduct('40 Kwh', '20,900원')">
+        <div class="list-item" onclick="selectProduct('40', '20,900원')">
           40 Kwh - 예상 20,900원
         </div>
-        <div class="list-item" onclick="selectProduct('50 Kwh', '25,900원')">
+        <div class="list-item" onclick="selectProduct('50', '25,900원')">
           50 Kwh - 예상 25,900원
         </div>
         <button class="btn btn-close" onclick="closeProductPopup()">
@@ -335,6 +335,7 @@
       let clientId = "{{ clientId }}";
       let latitude = null;
       let longitude = null;
+      let selectChargeAmount; // 고객이 선택한 상품 - 숫자 값만 가져오기
       // let detailAddress = null;  // #37 필요 없을 듯
 
       function initTmap() {
@@ -394,6 +395,7 @@
 
       function selectProduct(product, price) {
         document.getElementById("product").value = `${product} - 예상 ${price}`;
+        selectChargeAmount = product;
         closeProductPopup();
       }
 
@@ -503,7 +505,7 @@
         const carNumber = document.getElementById("car-number").value;
         const detailAddress = document.getElementById("detail-address").value;
         if (
-          !product ||
+          !selectChargeAmount ||
           selectedHour === null ||
           selectedMinute === null ||
           latitude === null ||
@@ -519,7 +521,7 @@
           clientId,
           latitude,
           longitude,
-          product,
+          selectChargeAmount,
           reservationTimeInMinutes,
           carNumber,
           detailAddress
@@ -529,7 +531,7 @@
           const queryParams = new URLSearchParams({
             latitude: latitude,
             longitude: longitude,
-            charge_amount: product,
+            charge_amount: selectChargeAmount,
             reservation_time: reservationTimeInMinutes,
             car_number: carNumber,
             // detail_address: detailAddress, // #37 이 데이터는 다음 페이지로 보낼 필요 없음

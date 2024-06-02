@@ -46,11 +46,11 @@ def append_data():
         # - 서비스 요청 시간이 480~900인 경우: E_02.txt 파일
         # - 서비스 요청 시간이 960~1380인 경우: E_03.txt 파일
         if 0 <= ready_time < 480:
-            file_name = 'orderData/E_01.txt'
+            file_name = 'static/orderData/E_01.txt'
         elif 480 <= ready_time < 960:
-            file_name = 'orderData/E_02.txt'
+            file_name = 'static/orderData/E_02.txt'
         elif 960 <= ready_time <= 1380:
-            file_name = 'orderData/E_03.txt'
+            file_name = 'static/orderData/E_03.txt'
 
         append_customer_to_file(file_name, xcoord, ycoord, demand, ready_time, due_date)
 

@@ -39,11 +39,11 @@ class KShortestPathActor:
             return (source, target, [])
         
 class two_phase_heuristic:
-    def __init__(self, datafile, battery_json_path, truck_csv_path, M=100000, lamb=50000, TN=4, CT=2, num_cpus=4):
-        # self.cpx = cplex.Cplex()
+    def __init__(self, datafile, battery_json_path, truck_csv_path, drawroute_json_path,  M=100000, lamb=50000, TN=4, CT=2, num_cpus=4):
         self.datafile = datafile
         self.battery_json_path = battery_json_path
         self.truck_csv_path = truck_csv_path
+        self.drawroute_json_path = drawroute_json_path
 
         self.M = M
         self.lamb = lamb
@@ -182,10 +182,16 @@ class two_phase_heuristic:
         # 소수점 둘째 자리까지 반올림
         T_ij = {key: round(value, 2) for key, value in T_ij.items()}
 
-        print("T_ij: ", T_ij)
-        print("D_ij: ", D_ij)
-        
+        T_ij_ot = T_ij.copy()
 
+        for key in list(T_ij.keys()):
+            if key[1] == '11':
+                new_key = (key[0], '0')
+                T_ij_ot[new_key] = T_ij[key]
+
+        # print("T_ij: ", T_ij)
+        # print("D_ij: ", D_ij)
+        
         self.depot_operation_time = L_n - E_0
         self.N = N
         self.N_hat = N_hat
@@ -213,6 +219,7 @@ class two_phase_heuristic:
         self.S_i=S_i
         self.C_i = C_i
         self.T_ij=T_ij
+        self.T_ij_ot = T_ij_ot
         self.D_ij = D_ij
 
         self.node_to_index = {node: index for index, node in enumerate(self.N)}
@@ -229,34 +236,23 @@ class two_phase_heuristic:
                     # distance = self.calculate_distance(node1, node2)  
                     distance = self.D_ij[(node1, node2)]
                     time = self.T_ij[(node1, node2)]
-
-                    # print("node1: ", node1)
-                    # print("node2: ", node2)
-                    # print("distance: ", distance)
-
                     if time <= self.depot_operation_time and self.check_time_window(node1, node2):
                         self.G.add_edge(node1, node2, weight=distance)  
-        
-        # Edge가 생성되었는지 확인하기 위해 프린트
-        print("Edges in the graph:")
-        for edge in self.G.edges(data=True):
-            print(edge)
 
- 
-    def get_coordinates(self, node):
-        index = self.N.index(node)
-        x = self.x_coord[index]
-        y = self.y_coord[index]
-        return x, y
+    # def get_coordinates(self, node):
+    #     index = self.N.index(node)
+    #     x = self.x_coord[index]
+    #     y = self.y_coord[index]
+    #     return x, y
     
-    def calculate_distance(self, node1, node2):
-        x1, y1 = self.get_coordinates(node1)
-        x2, y2 = self.get_coordinates(node2)
-        distance = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
-        return distance
+    # def calculate_distance(self, node1, node2):
+    #     x1, y1 = self.get_coordinates(node1)
+    #     x2, y2 = self.get_coordinates(node2)
+    #     distance = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
+    #     return distance
 
     def check_time_window(self, node1, node2):
-        # travel_time = self.calculate_distance(node1, node2)   # 현재 차량 속도 고려 X
+        # travel_time = self.calculate_distance(node1, node2)   # 차량 속도 고려 X
         travel_time = self.T_ij[(node1, node2)]     # 차량 속도 고려 
         arrive_time = self.E_i[self.N.index(node1)] + travel_time
         end_window = self.L_i[self.N.index(node2)]
@@ -278,19 +274,16 @@ class two_phase_heuristic:
     def all_k_shortest_paths(self, k):
         nodes = list(self.G.nodes())
         futures = []
-
         for i, node1 in enumerate(nodes):
             for node2 in nodes[i+1:]:
                 if nx.has_path(self.G, node1, node2):
                     futures.append(two_phase_heuristic.calculate_k_shortest_paths.remote(self.G, node1, node2, k))
-        
         results = ray.get(futures)
         for result in results:
             source, target, paths = result
             self.all_k_shortest_paths_result[(source, target)] = paths
             if nx.has_path(self.G, target, source):
                 self.all_k_shortest_paths_result[(target, source)] = [list(reversed(path)) for path in paths]
-       
         return self.all_k_shortest_paths_result
     
 
@@ -401,13 +394,9 @@ class two_phase_heuristic:
         elecvery_battery_used_capacity = {int(key): int(value) for key, value in battery_usage.items()}
         elecvery_battery_visited_nodes = {int(key): list(map(int, value)) for key, value in elecvery_battery_visited_node.items()}
 
-        # print("elecvery_visited nodes set: ",  elecvery_visited_nodes_set)
-        # print("elecvery_battery visited nodes: ", elecvery_battery_visited_nodes)
-        # print("elecvery_Battery별 사용량: ", elecvery_battery_used_capacity)
-
-        self.elecvery_visited_nodes_set = elecvery_visited_nodes_set
-        self.elecvery_battery_visited_nodes = elecvery_battery_visited_nodes
-        self.elecvery_battery_used_capacity = elecvery_battery_used_capacity
+        # self.elecvery_visited_nodes_set = elecvery_visited_nodes_set
+        # self.elecvery_battery_visited_nodes = elecvery_battery_visited_nodes
+        # self.elecvery_battery_used_capacity = elecvery_battery_used_capacity
 
         return elecvery_visited_nodes_set , elecvery_battery_visited_nodes, elecvery_battery_used_capacity
 
@@ -453,7 +442,7 @@ class two_phase_heuristic:
 
         clusters = []
         perform_nodes = valid_nodes[:]
-        max_capacity = 60
+        max_capacity = 75
         P_of_best_choice = 0.6
         Q_of_best_choice = 1.0 - P_of_best_choice
 
@@ -553,17 +542,12 @@ class two_phase_heuristic:
         cluster_battery_used_capacity = {int(key): int(value) for key, value in battery_usage.items()}
         cluster_battery_visited_nodes = {int(key): list(map(int, value)) for key, value in cluster_battery_visited_node.items()}
 
-        self.clusters = clusters
-        self.cluster_value = cluster_value
-        self.valid_nodes = valid_nodes
-
-        # print("cluster_visited nodes set: ",  cluster_visited_nodes_set)
-        # print("cluster_battery visited nodes: ", cluster_battery_visited_nodes)
-        # print("cluster_Battery별 사용량: ", cluster_battery_used_capacity)
-
-        self.cluster_visited_nodes_set = cluster_visited_nodes_set
-        self.cluster_battery_visited_nodes = cluster_battery_visited_nodes
-        self.cluster_battery_used_capacity = cluster_battery_used_capacity
+        # self.clusters = clusters
+        # self.cluster_value = cluster_value
+        # self.valid_nodes = valid_nodes
+        # self.cluster_visited_nodes_set = cluster_visited_nodes_set
+        # self.cluster_battery_visited_nodes = cluster_battery_visited_nodes
+        # self.cluster_battery_used_capacity = cluster_battery_used_capacity
         
         return cluster_visited_nodes_set , cluster_battery_visited_nodes, cluster_battery_used_capacity
 
@@ -586,22 +570,22 @@ class two_phase_heuristic:
         
         return data
     
-    def compute_euclidean_distance_matrix(self, locations):
-        """Creates callback to return distance between points."""
-        distances = {}
-        for from_counter, from_node in enumerate(locations):
-            distances[from_counter] = {}
-            for to_counter, to_node in enumerate(locations):
-                if from_counter == to_counter:
-                    distances[from_counter][to_counter] = 0
-                else:
-                    # Euclidean distance
-                    # distances[from_counter][to_counter] = (int(
-                    #     math.hypot((from_node[0] - to_node[0]),
-                    #                (from_node[1] - to_node[1]))))
-                    distance = math.hypot((from_node[0] - to_node[0]), (from_node[1] - to_node[1]))
-                    distances[from_counter][to_counter] = round(distance, 2)  # 거리를 반올림하여 저장
-        return distances
+    # def compute_euclidean_distance_matrix(self, locations):
+    #     """Creates callback to return distance between points."""
+    #     distances = {}
+    #     for from_counter, from_node in enumerate(locations):
+    #         distances[from_counter] = {}
+    #         for to_counter, to_node in enumerate(locations):
+    #             if from_counter == to_counter:
+    #                 distances[from_counter][to_counter] = 0
+    #             else:
+    #                 # Euclidean distance
+    #                 # distances[from_counter][to_counter] = (int(
+    #                 #     math.hypot((from_node[0] - to_node[0]),
+    #                 #                (from_node[1] - to_node[1]))))
+    #                 distance = math.hypot((from_node[0] - to_node[0]), (from_node[1] - to_node[1]))
+    #                 distances[from_counter][to_counter] = round(distance, 2)  # 거리를 반올림하여 저장
+    #     return distances
         
     def ORTools_cvrptw(self):
         visited_nodes_set = set()
@@ -624,13 +608,15 @@ class two_phase_heuristic:
             """Returns the distance between the two nodes."""
             from_node = manager.IndexToNode(from_index)
             to_node = manager.IndexToNode(to_index)
-
             # 각 노드에서의 충전하는 시간 추가
             charge_time = self.data['charge_times'][from_node]
+
+            try:
+                return self.T_ij_ot[(str(from_node), str(to_node))] + charge_time
+            except KeyError:
+                # print(f"KeyError with from_node: {from_node}, to_node: {to_node}")
+                return charge_time 
             # return int(distance_matrix[from_node][to_node] / self.data['speed']) + charge_time
-            return self.T_ij[(from_node, to_node)] + charge_time
-        
-        # self.time_callback = time_callback
 
         def demand_callback(from_index):  
             """Returns the demand of the node."""
@@ -638,20 +624,23 @@ class two_phase_heuristic:
             return self.data['demands'][from_node]
 
         # distance_matrix = self.compute_euclidean_distance_matrix(self.data['locations'])
-        distance_matrix = self.T_ij
 
         transit_callback_index = routing.RegisterTransitCallback(time_callback)
 
         # Define cost of each arc.
         routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
 
+        depot_earlest_time = self.data['time_windows'][0][0]
+        depot_latest_time = self.data['time_windows'][0][1]
+
         # time dimension 추가
         routing.AddDimension(
                 transit_callback_index,
-                2000,   # allow waiting time, 위치에서의 대기 시간
-                2000,   # maximum time per vehicle in a route, 한 차가 route를 도는데 쓸 수 있는 최대 시간
+                depot_latest_time,   # allow waiting time, 위치에서의 대기 시간
+                depot_latest_time,   # maximum time per vehicle in a route, 한 차가 route를 도는데 쓸 수 있는 최대 시간
                 False,  # Don't force start cumul to zero.
                 'Time')
+       
         # time window 제약 추가
         time_dimension = routing.GetDimensionOrDie('Time')
 
@@ -660,18 +649,11 @@ class two_phase_heuristic:
             if location_idx == 0:
                 continue
             index = manager.NodeToIndex(location_idx)
-                        
-            # 충전 시간을 고려하여 유효한 time window 생성
-            adjusted_earliest_time = max(time_window[0], self.data['charge_times'][location_idx])
-            adjusted_latest_time = time_window[1]
-            time_dimension.CumulVar(index).SetRange(adjusted_earliest_time, adjusted_latest_time)
             
+            time_dimension.CumulVar(index).SetRange(time_window[0], time_window[1])            
             routing.AddDisjunction([index], 1000)  # 모든 node 방문 안해도 ok
 
-        # Add time window constraints for each vehicle start node.
-        depot_earlest_time = self.data['time_windows'][0][0]
-        depot_latest_time = self.data['time_windows'][0][1]
-  
+        # Add time window constraints for each vehicle start node.  
         for vehicle_id in range(self.data['num_batteries']):
             index = routing.Start(vehicle_id)
             time_dimension.CumulVar(index).SetRange(depot_earlest_time, depot_latest_time)
@@ -732,16 +714,12 @@ class two_phase_heuristic:
                 battery_visited_nodes[vehicle_id + 1] = visited_nodes
                 battery_used_capacity[vehicle_id + 1] = route_demand
 
-                print(plan_output_demand)
-                print(plan_output_customer)
+            #     print(plan_output_demand)
+            #     print(plan_output_customer)
 
-            print("ortools_visited nodes set: ", visited_nodes_set)
-            print("ortools_battery visited nodes: ", battery_visited_nodes)
-            print("ortools_Battery별 사용량: ", battery_used_capacity)
-
-            self.visited_nodes_set = visited_nodes_set
-            self.battery_visited_nodes = battery_visited_nodes
-            self.battery_used_capacity = battery_used_capacity
+            # self.visited_nodes_set = visited_nodes_set
+            # self.battery_visited_nodes = battery_visited_nodes
+            # self.battery_used_capacity = battery_used_capacity
             
             return visited_nodes_set, battery_visited_nodes, battery_used_capacity
 
@@ -1127,14 +1105,14 @@ class two_phase_heuristic:
             'node_insertion': 0
         }
 
-        # probabilities = [0.7, 0.05, 0.25]  
+        probabilities = [0.8, 0.1, 0.1]  
 
         while temperature > 0.1 and iterations < max_iterations:
             print("***** starting SA")
             if time.time() - start_time >= time_limit:
                 break
             
-            probabilities = [0.5, 0.05, 0.45]  
+            # probabilities = [0.8, 0.1, 0.1]  
             selected_operator = random.choices([self.node_exchange, self.node_removal, self.node_insertion], weights=probabilities)[0]
             
             operator_name = selected_operator.__name__
@@ -1164,24 +1142,24 @@ class two_phase_heuristic:
                         
                         operator_improvement_count[operator_name] += 1
 
-                        # # 확률 업데이트
-                        # if operator_name == 'node_exchange':
-                        #     probabilities[0] += 0.005
-                        #     probabilities[1] -= 0.0025
-                        #     probabilities[2] -= 0.0025
-                        # elif operator_name == 'node_removal':
-                        #     probabilities[0] -= 0.0025
-                        #     probabilities[1] += 0.005
-                        #     probabilities[2] -= 0.0025
-                        # elif operator_name == 'node_insertion':
-                        #     probabilities[0] -= 0.0025
-                        #     probabilities[1] -= 0.0025
-                        #     probabilities[2] += 0.005
+                        # 확률 업데이트
+                        if operator_name == 'node_exchange':
+                            probabilities[0] += 0.005
+                            probabilities[1] -= 0.0025
+                            probabilities[2] -= 0.0025
+                        elif operator_name == 'node_removal':
+                            probabilities[0] -= 0.0025
+                            probabilities[1] += 0.005
+                            probabilities[2] -= 0.0025
+                        elif operator_name == 'node_insertion':
+                            probabilities[0] -= 0.0025
+                            probabilities[1] -= 0.0025
+                            probabilities[2] += 0.005
 
-                        # # 확률 정규화
-                        # probabilities = [max(0, p) for p in probabilities]
-                        # total = sum(probabilities)
-                        # probabilities = [p / total for p in probabilities]
+                        # 확률 정규화
+                        probabilities = [max(0, p) for p in probabilities]
+                        total = sum(probabilities)
+                        probabilities = [p / total for p in probabilities]
 
                     else:
                         # new_energy가 더 작은 경우, 수락 확률을 계산
@@ -2235,30 +2213,40 @@ class two_phase_heuristic:
                             
                             battery_info.append([route, u_value_1[u_key], Battery_state[battery_state_key][i]])
                 Battery_info[battery_number] = battery_info
-            
 
-            # json
-            battery_json_filename = os.path.join(self.battery_json_path, f'battery_output_{base_name}.json')
-
-            with open(battery_json_filename, 'w', encoding='cp949') as jsonfile:
-            #with open(battery_json_filename, 'w', encoding='utf-8') as jsonfile:
-                json.dump(Battery_info, jsonfile, ensure_ascii=False, indent=4)
-            print(f"데이터가 {battery_json_filename} 파일에 저장되었습니다.")
-
-
-            # csv
-            # battery_json_filename = os.path.join(self.battery_json_path, f'battery_output_0526_{base_name}.csv')
-
-            # # with open(battery_csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
-            # with open(battery_json_filename, 'w', newline='', encoding='cp949') as csvfile:
-            #     writer = csv.writer(csvfile)
-            #     writer.writerow(['Battery_Num', 'Node', 'Time', 'State'])
-            #     for key, value in Battery_info.items():
-            #         for sublist in value:
-            #             writer.writerow([key] + sublist)
+            for i in Battery_info:
+                if Battery_info[i][0][0] == '0':
+                    Battery_info[i][0][1] = Battery_info[i][1][1] - self.T_ij['0', Battery_info[i][1][0]]
+            for i in Battery_info:
+                if Battery_info[i][-1][0] == str(len(self.N)+1):
+                    Battery_info[i][-1][1] = 0
+                    Battery_info[i][-1][1] = Battery_info[i][-2][1] + 5 + self.T_ij[Battery_info[i][-2][0], Battery_info[i][-1][0]]
+            for i in Battery_info:
+                for sublist in Battery_info[i]:
+                    sublist[1] = round(sublist[1])
 
 
-            # truck
+            # battery json
+            # battery_json_filename = os.path.join(self.battery_json_path, f'battery_output_{base_name}.json')
+
+            # with open(battery_json_filename, 'w', encoding='cp949') as jsonfile:
+            # #with open(battery_json_filename, 'w', encoding='utf-8') as jsonfile:
+            #     json.dump(Battery_info, jsonfile, ensure_ascii=False, indent=4)
+            # print(f"데이터가 {battery_json_filename} 파일에 저장되었습니다.")
+
+
+            # battery csv
+            battery_json_filename = os.path.join(self.battery_json_path, f'battery_output_{base_name}.csv')
+
+            # with open(battery_csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
+            with open(battery_json_filename, 'w', newline='', encoding='cp949') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(['Battery_Num', 'Node', 'Time', 'State'])
+                for key, value in Battery_info.items():
+                    for sublist in value:
+                        writer.writerow([key] + sublist)
+
+            # truck csv
             headers = ['driver_id', 'client_id', 'delivery_type', 'latitude', 'longitude', 'time']
 
             def determine_delivery_type(stop):
@@ -2271,9 +2259,8 @@ class two_phase_heuristic:
             
             truck_csv_filename = os.path.join(self.truck_csv_path, f'Truck_routes_{base_name}.csv')
             
-            # //#28 fix: VSCode상에서 올바로 받아올 수 있도록 (기존: cp949 -> utf-8)
             with open(truck_csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
-            # with open(truck_csv_filename, 'w', newline='', encoding='cp949') as csvfile:
+            #with open(truck_csv_filename, 'w', newline='', encoding='cp949') as csvfile:
                 writer = csv.writer(csvfile)
                 writer.writerow(headers)  # 헤더 작성
                 
@@ -2283,21 +2270,64 @@ class two_phase_heuristic:
                         if stop not in ['0', str(len(self.N)+1)]:
                             delivery_type = determine_delivery_type(stop)
                             client_id = stop.replace('h', '')  # 'h' 제거하여 클라이언트 ID 얻기
-                            latitude = self.x_coord[int(client_id)-1]  # client_id에 해당하는 x_coord 가져오기
-                            longitude = self.y_coord[int(client_id)-1]  # client_id에 해당하는 y_coord 가져오기
+                            latitude = self.y_coord[int(client_id)-1]  # client_id에 해당하는 x_coord 가져오기
+                            longitude = self.x_coord[int(client_id)-1]  # client_id에 해당하는 y_coord 가져오기
                             time_key = stop if 'h' not in stop else stop[2:]  # 'h'가 있으면 'h'를 제외하고 가져오기
                             time_minutes = u_value_1['u_'+stop]  # 시간 정보 가져오기
                             time = minutes_to_time(time_minutes)  # 시간을 시:분 형식의 문자열로 변환
                             writer.writerow([driver_id, client_id, delivery_type, latitude, longitude, time])
             print(f"데이터가 {truck_csv_filename} 파일에 저장되었습니다.")
 
+            # draw route json
+            drawroute_json_filename = os.path.join(self.drawroute_json_path, f'drawroute_{base_name}.json')
+            data = {}
+
+            for truck, stops in Truck_routes.items():
+                driver_id = truck.replace('Truck', '')  # 트럭 이름에서 번호 추출
+                if driver_id not in data:
+                    data[driver_id] = []
+                for stop in stops:
+                    if stop not in ['0', str(len(self.N)+1)]:
+                        client_id = stop.replace('h', '')  # 'h' 제거하여 클라이언트 ID 얻기
+                        latitude = self.y_coord[int(client_id)-1]  # client_id에 해당하는 y_coord 가져오기
+                        longitude = self.x_coord[int(client_id)-1]  # client_id에 해당하는 x_coord 가져오기
+                        time_key = stop if 'h' not in stop else stop[2:]  # 'h'가 있으면 'h'를 제외하고 가져오기
+                        time_minutes = u_value_1['u_'+stop]  # 시간 정보 가져오기
+                        time = minutes_to_time(time_minutes)  # 시간을 시:분 형식의 문자열로 변환
+                        data[driver_id].append({
+                            "latitude": latitude,
+                            "longitude": longitude,
+                            "time": time
+                        })
+                    elif stop == '0':
+                        latitude = self.yd_coord  # yd_coord 가져오기
+                        longitude = self.xd_coord  # xd_coord 가져오기
+                        time = minutes_to_time(self.E_0)  # 시간을 시:분 형식의 문자열로 변환
+                        data[driver_id].append({
+                            "latitude": latitude,
+                            "longitude": longitude,
+                            "time": time
+                        })
+                    elif stop == str(len(self.N)+1):
+                        latitude = self.yd_coord  # yd_coord 가져오기
+                        longitude = self.xd_coord  # xd_coord 가져오기
+                        time = minutes_to_time(self.L_n)  # 시간을 시:분 형식의 문자열로 변환
+                        data[driver_id].append({
+                            "latitude": latitude,
+                            "longitude": longitude,
+                            "time": time
+                        })
+
+            with open(drawroute_json_filename, 'w', encoding='utf-8') as jsonfile:
+                json.dump(data, jsonfile, ensure_ascii=False, indent=4)
+
         except Exception as e:
             print("An error occurred:", e)
 
 
-def solve(datafile, battery_json_path, truck_json_path):
+def solve(datafile, battery_json_path, truck_json_path , drawroute_json_path):
     try:
-        solver = two_phase_heuristic(datafile, battery_json_path, truck_json_path)
+        solver = two_phase_heuristic(datafile, battery_json_path, truck_json_path ,drawroute_json_path)
         solver.read_datafile()
         solver.construct_graph()
         # self.print_memory_usage()  # 메모리 사용량 출력
