@@ -10,15 +10,39 @@
 #36 고객 화면 - 예약 화면 추가
 #37 고객 화면 - 주문 정보 데이터 RabbitMQ로 송신하기 && 다음 페이지(screen_Client.html)로 보내기
 
+#41 현재시간 기준으로 배달 관련 csv 파일 가져오기
 '''
 from flask import Flask, render_template, abort, request, redirect, url_for
 import pandas as pd
+from datetime import datetime   #41
+
 
 app = Flask(__name__)
 
+#41 현재시간 기준으로 배달 관련 csv 파일 가져오기
+# Define the base path for the CSV files
+BASE_PATH = "C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/static/"
+
+def get_current_time_in_minutes():
+    now = datetime.now()
+    return now.hour * 60 + now.minute
+
+def select_csv_file():
+    current_time = get_current_time_in_minutes()
+    if 0 <= current_time < 480:
+        return BASE_PATH + "Truck_routes_E_01.csv"
+    elif 480 <= current_time < 960:
+        return BASE_PATH + "Truck_routes_E_02.csv"
+    elif 960 <= current_time < 1440:
+        return BASE_PATH + "Truck_routes_E_03.csv"
+    else:
+        raise ValueError("Invalid time range")
+
 #22 CSV 파일 로드해서 데이터를 읽어오는 함수
+#41 현재시간 기준으로 배달 관련 csv 파일 가져오기
 def load_deliveries():
-    return pd.read_csv("C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/static/deliveries.csv")
+    selected_csv_file = select_csv_file()
+    return pd.read_csv(selected_csv_file)
 
 
 #35 페이지 연결 
@@ -34,13 +58,13 @@ def client_order(clientId):
 
 @app.route('/client/<int:client_id>')
 def client_page(client_id):    
-    #22 URL에 포함된 client_id가 csv파일(deliveries.csv)에 존재하는지 확인
+    #22 URL에 포함된 client_id가 csv파일(Truck_routes_E_0n.csv)에 존재하는지 확인
     deliveries = load_deliveries()
 
 
     # #22 'render_template' 함수를 사용해 html 파일 렌더링 & 
     # # 'client_id'를 HTML 파일로 전달하여, 페이지에서 사용할 수 있도록 함. 
-    # # 'client_id'를 바탕으로 deliveries.csv 파일에 있는 고객인지 확인 후 코드 실행
+    # # 'client_id'를 바탕으로 Truck_routes_E_0n.csv 파일에 있는 고객인지 확인 후 코드 실행
     # if client_id in deliveries['client_id'].values:
     #     return render_template('screen_Client.html', clientId=client_id)
     # else:

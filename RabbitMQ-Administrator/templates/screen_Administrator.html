@@ -895,7 +895,7 @@
           selectedTxtFile = "E_03.txt";
         }
 
-        console.log("//#39 선택한 시간대: " + selectedTxtFile);
+        console.log("//#40 선택한 시간대의 txt 파일: " + selectedTxtFile);
         return selectedTxtFile;
       }
 
@@ -911,7 +911,7 @@
           selectedCsvFile = "Truck_routes_E_03.csv";
         }
 
-        console.log("//#39 선택한 시간대: " + selectedCsvFile);
+        console.log("//#41 선택한 시간대의 csv 파일: " + selectedCsvFile);
         return selectedCsvFile;
       }
 
@@ -1463,34 +1463,34 @@
 
         stompClient.subscribe(subscribeOrderTopic, function (message) {
           var clientOrderData = JSON.parse(message.body);
-          console.log("//#37 고객 주문 데이터 수신: " + clientOrderData.body);
-          console.log(
-            "//#37 고객 주문 데이터 - 고객 아이디: " +
-              parseInt(clientOrderData.clientId)
-          );
-          console.log(
-            "//#37 고객 주문 데이터 - 위도: " +
-              parseFloat(clientOrderData.latitude)
-          );
-          console.log(
-            "//#37 고객 주문 데이터 - 경도: " +
-              parseFloat(clientOrderData.longitude)
-          );
-          console.log(
-            "//#37 고객 주문 데이터 - 충전량: " +
-              parseInt(clientOrderData.chargeAmount)
-          );
-          console.log(
-            "//#37 고객 주문 데이터 - 예약 시작 시간: " +
-              parseInt(clientOrderData.reservationTime)
-          );
-          console.log(
-            "//#37 고객 주문 데이터 - 차량번호: " + clientOrderData.carNumber
-          );
-          console.log(
-            "//#37 고객 주문 데이터 - 상세 주소: " +
-              clientOrderData.detailAddress
-          );
+          // console.log("//#37 고객 주문 데이터 수신: " + clientOrderData.body);
+          // console.log(
+          //   "//#37 고객 주문 데이터 - 고객 아이디: " +
+          //     parseInt(clientOrderData.clientId)
+          // );
+          // console.log(
+          //   "//#37 고객 주문 데이터 - 위도: " +
+          //     parseFloat(clientOrderData.latitude)
+          // );
+          // console.log(
+          //   "//#37 고객 주문 데이터 - 경도: " +
+          //     parseFloat(clientOrderData.longitude)
+          // );
+          // console.log(
+          //   "//#37 고객 주문 데이터 - 충전량: " +
+          //     parseInt(clientOrderData.chargeAmount)
+          // );
+          // console.log(
+          //   "//#37 고객 주문 데이터 - 예약 시작 시간: " +
+          //     parseInt(clientOrderData.reservationTime)
+          // );
+          // console.log(
+          //   "//#37 고객 주문 데이터 - 차량번호: " + clientOrderData.carNumber
+          // );
+          // console.log(
+          //   "//#37 고객 주문 데이터 - 상세 주소: " +
+          //     clientOrderData.detailAddress
+          // );
 
           // #38 RabbitMQ를 통해 고객 화면으로부터 수신한 주문 정보를 txt 파일에 추가(서비스 요청 시간에 따라 각각 다른 파일에 저장)
           appendDataToFile(clientOrderData);
@@ -1612,7 +1612,10 @@
       }
 
       function fetchDrivers() {
-        fetch("/static/deliveries.csv")
+        // #41 현재시간 기준으로 배달 관련 csv 파일 가져오기
+        const selectedCsvFile = setCsvFileByTime();
+
+        fetch(`/static/${selectedCsvFile}`)
           .then((response) => response.text())
           .then((csvText) => {
             var data = Papa.parse(csvText, { header: true }).data;
@@ -1727,7 +1730,10 @@
 
       //#33-3 ========== 여기부터 ==========드라이버 업무 진척도를 [수평 진행률 표시줄]을 통해 표현
       function loadDriverDeliveries() {
-        Papa.parse("/static/deliveries.csv", {
+        // #41 현재시간 기준으로 배달 관련 csv 파일 가져오기
+        const selectedCsvFile = setCsvFileByTime();
+
+        Papa.parse(`/static/${selectedCsvFile}`, {
           download: true,
           header: true,
           complete: function (results) {

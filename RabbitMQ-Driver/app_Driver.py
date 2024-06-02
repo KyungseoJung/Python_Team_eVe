@@ -2,21 +2,57 @@
 
 #35 고객 화면과 Driver 화면에서 코드 추가 - 모바일 웹 화면으로 확인할 때, 페이지 연결 및 구조가 적절히 보이도록
 
+#41 현재시간 기준으로 배달 관련 csv 파일 가져오기
+
 '''
 from flask import Flask, render_template, send_from_directory, abort
 import pandas as pd
+from datetime import datetime   #41
 
 app = Flask(__name__)
+
+#41 현재시간 기준으로 배달 관련 csv 파일 가져오기
+# Define the base path for the CSV files
+BASE_PATH = "C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/static/"
+
+def get_current_time_in_minutes():
+    now = datetime.now()
+    return now.hour * 60 + now.minute
+
+def select_csv_file():
+    current_time = get_current_time_in_minutes()
+    if 0 <= current_time < 480:
+        return BASE_PATH + "Truck_routes_E_01.csv"
+    elif 480 <= current_time < 960:
+        return BASE_PATH + "Truck_routes_E_02.csv"
+    elif 960 <= current_time < 1440:
+        return BASE_PATH + "Truck_routes_E_03.csv"
+    else:
+        raise ValueError("Invalid time range")
+
 
 #26 CSV 파일 로드해서 데이터를 보내는 함수 - 절대적인 경로에서 데이터 파일을 가져오도록 구조 변경
 @app.route('/deliveries')
 def deliveries():
-    # CSV 파일 경로가 정확하고 서버 관점에서 액세스 가능한지 확인하도록!
-    return send_from_directory('C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/static', 'deliveries.csv')
+    selected_csv_file = select_csv_file()
 
-# //#33 Driver 여러 명 페이지
+    #41 Extract the filename from the selected file path
+    # '/'로 자른 목록들 중 - 목록의 마지막 요소를 검색하는 목록 인덱싱
+    filename = selected_csv_file.split('/')[-1]
+    return send_from_directory(BASE_PATH, filename)
+
+    # # CSV 파일 경로가 정확하고 서버 관점에서 액세스 가능한지 확인하도록!
+    # return send_from_directory('C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/static', 'deliveries.csv')
+
+# # //#33 Driver 여러 명 페이지
+# def load_deliveries():
+#     return pd.read_csv("C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/static/deliveries.csv")
+
+#41 현재시간 기준으로 배달 관련 csv 파일 가져오기
 def load_deliveries():
-    return pd.read_csv("C:/GitStudy/Python_Team_eVe/RabbitMQ-Administrator/static/deliveries.csv")
+    selected_csv_file = select_csv_file()
+    return pd.read_csv(selected_csv_file)
+
 
 #35 페이지 연결 
 @app.route('/driver')

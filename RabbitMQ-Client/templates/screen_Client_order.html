@@ -540,7 +540,7 @@
           // app_Client.py에서 /client/<clientId> 라우트가 latitude, longitude, charge_amount, reservation_time 파라미터를 받도록
           // -> 이 파라미터들을 HTML 템플릿에 전달하여 사용할 수 있도록
           window.location.href = `/client/${clientId}?${queryParams}`;
-        }, 10000);
+        }, 1000); // 1초 딜레이
       }
 
       function sendReservationDataToRabbitMQ(
