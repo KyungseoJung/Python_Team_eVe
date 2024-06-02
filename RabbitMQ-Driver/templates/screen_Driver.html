@@ -20,7 +20,7 @@
 #33-4각각의 Driver페이지에 driver_id에 맞게 자신에게 할당된 업무만 나타나도록
 
 #35 고객 화면과 Driver 화면에서 코드 추가 - 모바일 웹 화면으로 확인할 때, 페이지 연결 및 구조가 적절히 보이도록
-
+#42 각 배달원이 무슨 번호의 배터리를 배달 or 수거해야 하는지 표시
 -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -202,6 +202,7 @@
         <div>
           <div class="header">경로 표시</div>
           <div class="delivery-info">
+            <div class="item" id="battery-id"><strong>N번</strong></div>
             <div class="item" id="delivery-type"><strong>배달</strong></div>
           </div>
           <!-- 도착지 표시 -->
@@ -254,6 +255,7 @@
         console.log("//#22 Flask로부터 전달받은 driverId 값: " + driverId);
 
         // 배달 유형 표시 문구
+        var batteryId = document.getElementById("battery-id"); // #42 배달원이 배달or수거 하는 배터리의 번호 작성
         var deliveryType = document.getElementById("delivery-type");
         // 위치 데이터 표시 문구    // #17-4 주석처리
         // var latitudeDisplay = document.getElementById("latitude");
@@ -547,6 +549,7 @@
             pickupCompleteBtn.disabled = true;
             alert("복귀하세요!!: " + "경기도 용인시 처인구 모현읍 왕산리 131"); // 작업 완료 팝업
             // (delivery_type & 위치 데이터) 표시 부분 업데이트
+            batteryId.innerText = ""; // #42 배달 모두 마치면, null 값 표시
             deliveryType.innerText = "작업 완료";
 
             // #17-4 주석처리
@@ -567,6 +570,8 @@
             arrivalTimeDisplay.innerText = deliveries[currentIndex].time;
 
             //#33-4 위치 이동: updateDeliveryInfo함수 시작점에서 else 문 안으로
+            batteryId.innerText =
+              deliveries[currentIndex].battery_id + "번 배터리"; // #42 각 배달원이 무슨 번호의 배터리를 배달 or 수거해야 하는지 표시
             deliveryType.innerText = deliveries[currentIndex].delivery_type;
             // #17-4 주석처리
             //   latitudeDisplay.innerText = deliveries[currentIndex]["location"][0];
