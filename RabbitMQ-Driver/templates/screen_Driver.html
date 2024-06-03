@@ -18,6 +18,7 @@
 
 #33-2 드라이버 정보 표로 표시(driver_id, 상태, 다음 도착지)
 #33-4각각의 Driver페이지에 driver_id에 맞게 자신에게 할당된 업무만 나타나도록
+#33-4 fix: 복귀 해야할 때, 복귀 주소를 alert로 설정 & 주소 및 시간 확인 칸에 복귀 주소와 복귀 시간 표시
 
 #35 고객 화면과 Driver 화면에서 코드 추가 - 모바일 웹 화면으로 확인할 때, 페이지 연결 및 구조가 적절히 보이도록
 #42 각 배달원이 무슨 번호의 배터리를 배달 or 수거해야 하는지 표시
@@ -467,6 +468,7 @@
 
         //#23 Driver의 위치 얻기
         function getDriverPos() {
+          // #50 실시간 실제 위치 값 -> 연습할 땐, 임의의 값 넣기
           navigator.geolocation.getCurrentPosition(function (position) {
             var userLocation = new Tmapv3.LatLng(
               position.coords.latitude,
@@ -479,14 +481,16 @@
               marker.setPosition(userLocation);
             } else {
               // 이미 존재하는 marker가 없다면, marker를 새로 생성
-              marker = new Tmapv3.Marker({
+              // marker = new Tmapv3.Marker({
+              marker = new Tmapv2.Marker({
                 position: userLocation,
-                map: map,
+                map: driverMap,
+                icon: "/static/image/ElectricTruck.png",
               });
             }
 
-            map.setCenter(userLocation);
-            console.log("얻은 위치 데이터: ", userLocation);
+            driverMap.setCenter(userLocation);
+            console.log("//#23 얻은 위치 데이터: ", userLocation);
             sendPosToClientRabbitMQ(
               position.coords.latitude,
               position.coords.longitude
@@ -783,7 +787,7 @@
           });
 
           // connectToRabbitMQ(); // -> script 마지막 부분에 실행함
-          // setInterval(getDriverPos, 10000); // Get User Position every 10 seconds // 10초에 한번씩 위치 받기 -> 지도 중심 맞추기
+          setInterval(getDriverPos, 10000); // Get User Position every 10 seconds // 10초에 한번씩 위치 받기 -> 지도 중심 맞추기
         }
 
         showNextRoute();

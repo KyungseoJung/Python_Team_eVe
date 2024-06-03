@@ -297,7 +297,7 @@
         width: calc(100% - 40px); /* Adjust width for padding */
         background-color: #ddd;
         border-radius: 5px;
-        margin-bottom: 10px;
+        margin-bottom: 20px;
         position: relative; /* For positioning the driver ID absolutely */
         padding: 5px; /* Padding inside the progress bar */
         box-sizing: border-box; /* Include padding in width calculation */
@@ -305,9 +305,9 @@
 
       .segment {
         background-color: #eee;
-        height: 20px;
+        height: 30px; /* Increase height for thicker bars */
         float: left;
-        border-right: 1px solid #ccc; /* Visual separator */
+        border-right: 3px solid #ccc; /* Visual separator */
         box-sizing: border-box;
       }
 
@@ -574,8 +574,7 @@
 
           <!-- Panel3 -->
           <div class="panel">
-            <h2>Driver Work Process</h2>
-            <button class="button-check">
+            <h2>
               <img
                 src="https://cdn-icons-png.flaticon.com/128/265/265707.png"
                 alt="Progress Icon"
@@ -588,11 +587,11 @@
               />
 
               Driver 업무 진척도 확인
-            </button>
+            </h2>
             <!-- //#33-3 -->
             <div
               id="driverWorkProcess"
-              style="width: 100%; overflow-x: auto"
+              style="width: 98%; overflow-x: auto"
             ></div>
             <!-- Container for the progress bars -->
           </div>
@@ -2293,7 +2292,7 @@
         // #43 Tmapv3 -> Tmapv2로 변경 및 사용
         // var newDriverMarker = new Tmapv3.Marker({
         var newDriverMarker = new Tmapv2.Marker({
-          icon: "https://cdn-icons-png.flaticon.com/128/14975/14975104.png",
+          icon: "static/image/ElectricTruck.png",
           label: "Driver" + driverId, // #33-1 driverId를 바탕으로 배달 기사들 표시
           position: driverLocation,
           map: driverMap,
