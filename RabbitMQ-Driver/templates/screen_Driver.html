@@ -518,6 +518,36 @@
 
         //#23 Papa.parse 기존 위치 -> 맨 위로 이동
 
+        // #33-4 특정 위도, 경도 값을 받으면, 도로명주소를 콜백으로 뱉음
+        function getAddress(latitude, longitude, callback) {
+          //
+          var xhr = new XMLHttpRequest();
+          xhr.open(
+            "GET",
+            `https://apis.openapi.sk.com/tmap/geo/reversegeocoding?version=1&lat=${latitude}&lon=${longitude}&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu`
+          );
+          xhr.onload = function () {
+            if (xhr.status === 200) {
+              var response = JSON.parse(xhr.responseText);
+              var address = response.addressInfo.fullAddress;
+              if (callback) {
+                callback(address); // 변환된 주소를 콜백 함수로 전달
+              }
+            } else {
+              console.error("Failed to fetch address");
+              if (callback) {
+                callback(null);
+              }
+            }
+          };
+          xhr.onerror = function () {
+            console.error("Error during the network request.");
+            if (callback) {
+              callback(null);
+            }
+          };
+          xhr.send();
+        }
         //#17-4 (TMAP API 이용) 기존 위도, 경도를 "도로명 주소"로 변환하고, 표시
         function updateAddress(latitude, longitude) {
           var xhr = new XMLHttpRequest();
@@ -558,7 +588,27 @@
             // 두 버튼 모두 비활성화
             deliveryCompleteBtn.disabled = true;
             pickupCompleteBtn.disabled = true;
-            alert("복귀하세요!!: " + "경기도 용인시 처인구 모현읍 왕산리 131"); // 작업 완료 팝업
+
+            // alert("복귀하세요!!: " + "경기도 용인시 처인구 모현읍 왕산리 131"); // 작업 완료 팝업
+            // #33-4 fix: 각 Driver의 0번째 주소(=즉, Depot)를 도로명 주소로 변환해서 나타내기
+            // 각 Driver의 마지막 경로 지점을 drawroute JSON 파일에서 가져옴
+            fetchRouteData(driverId, function (routeData) {
+              var lastRoutePoint = routeData[routeData.length - 1];
+              getAddress(
+                lastRoutePoint.latitude,
+                lastRoutePoint.longitude,
+                function (address) {
+                  if (address) {
+                    arrivalAddressDisplay.innerText = address; // 복귀 지점 표시
+                    arrivalTimeDisplay.innerText = lastRoutePoint.time; // 복귀 시간 표시
+                    alert("복귀하세요!!: " + address);
+                  } else {
+                    alert("복귀하세요!!: 주소 변환 실패");
+                  }
+                }
+              );
+            });
+
             // (delivery_type & 위치 데이터) 표시 부분 업데이트
             batteryId.innerText = ""; // #42 배달 모두 마치면, null 값 표시
             deliveryType.innerText = "작업 완료";
@@ -566,8 +616,8 @@
             // #17-4 주석처리
             // latitudeDisplay.innerText = "";
             // longitudeDisplay.innerText = "";
-            arrivalAddressDisplay.innerText = "";
-            arrivalTimeDisplay.innerText = "";
+            // arrivalAddressDisplay.innerText = "";  // #33-4 fix: updateDeliveryInfo 함수에서 depot 장소를 보여줌
+            // arrivalTimeDisplay.innerText = ""; // #33-4 fix: updateDeliveryInfo 함수에서 depot 장소를 보여줌
             // console.log("//#17-4 작업 완료 후 문구 표시");
 
             return; //#33-4 updateDeliveryInfo 함수 탈출
@@ -596,6 +646,19 @@
               pickupCompleteBtn.disabled = false;
             }
           }
+        }
+
+        // #33-4 fix: 각 Driver의 0번째 주소(=즉, Depot)를 도로명 주소로 변환해서 나타내기
+        function getFirstRoutePoint(callback) {
+          var driverId = "{{ driverId }}";
+          var url = `/drawroute`;
+          fetch(url)
+            .then((response) => response.json())
+            .then((data) => {
+              var firstRoutePoint = data[driverId][0]; // 첫 번째 경로 지점
+              callback(firstRoutePoint);
+            })
+            .catch((error) => console.error("Error loading the JSON:", error));
         }
 
         // // 초기 정보 표시 및 업데이트  // #17-5 csv 파일 가져온 후 실행되도록 Papa.parse 함수 안에 넣기
