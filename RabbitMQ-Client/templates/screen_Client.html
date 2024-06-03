@@ -10,6 +10,7 @@
   "배달완료"하면 배터리 이미지 및 충전 종료 시간 띄우기, "수거완료"하면 "서비스 완료" 텍스트 띄우기
 #25-2 고객 화면 - "서비스 시작 시간"에 실시간 RabbitMQ로 "배달완료"메시지 왔을 때 시간 넣기,
   "예상 서비스 완료 시간"에 deliveries.csv에 있는 time 값 넣기(단, 해당 client_id에 해당하면서 delivery_type이 "배달"일 때 행에 해당하는 time값)
+#25-3 서비스 시작 및 서비스 완료 시, 알람
 
 #20 factor fix: RabbitMQ 구조화 - Administrator의 subscribe 처럼
 
@@ -342,10 +343,18 @@
           switch (message) {
             case "배달완료":
               // #25-2 "배달완료" 메시지를 받은 해당 시간 저장
-              const deliveryCompleteTime = new Date().toLocaleTimeString(
-                "ko-KR",
-                { hour: "2-digit", minute: "2-digit" }
-              );
+              // const deliveryCompleteTime = new Date().toLocaleTimeString(
+              //   "ko-KR",
+              //   { hour: "2-digit", minute: "2-digit" }
+              // );
+              const now1 = new Date();
+              const deliveryCompleteTime = `${String(now1.getHours()).padStart(
+                2,
+                "0"
+              )}:${String(now1.getMinutes()).padStart(2, "0")}`;
+
+              // #25-3 서비스 시작 및 서비스 완료 시, 알람
+              alert(deliveryCompleteTime + " | 충전이 시작되었습니다!");
 
               // Set "가고 있어요" and "충전을 완료했어요" to inactive (grey)
               goingCircle.classList.add("inactive");
@@ -366,6 +375,19 @@
               break;
 
             case "수거완료":
+              // const chargeCompleteTime = new Date().toLocaleTimeString(
+              //   "ko-KR",
+              //   { hour: "2-digit", minute: "2-digit" }
+              // );
+              const now2 = new Date();
+              const chargeCompleteTime = `${String(now2.getHours()).padStart(
+                2,
+                "0"
+              )}:${String(now2.getMinutes()).padStart(2, "0")}`;
+
+              // #25-3 서비스 시작 및 서비스 완료 시, 알람
+              alert(chargeCompleteTime + " | 서비스가 완료되었습니다!");
+
               // Set "가고 있어요" and "충전을 시작했어요" to inactive (grey)
               goingCircle.classList.add("inactive");
               chargingStartCircle.classList.add("inactive");
