@@ -35,6 +35,9 @@
 
 #41 현재시간 기준으로 배달 관련 csv 파일 3가지 중 하나를 가져오기
 #43 현재 시간대의 배달기사 경로 표시
+
+#38 실시간 추가된 고객 데이터가 있다면 NEW 표시를 하고, 해당 데이터 테이블을 띄우기
+
 -->
 
 <!DOCTYPE html>
@@ -371,7 +374,15 @@
       <!-- ============= //#28 [주문 확인] 페이지 - 수리모형 코드 통합 - 여기부터 =============-->
       <div id="appendAndSolve" class="section visible">
         <div class="panel">
-          <h2>실시간 주문 데이터 확인</h2>
+          <!-- <h2>실시간 주문 데이터 확인</h2> -->
+          <!-- #38 -->
+          <h2>
+            실시간 주문 데이터 확인
+            <span id="newDataIndicator" style="color: red; display: none"
+              >NEW!</span
+            >
+          </h2>
+
           <button
             class="button-check"
             onclick="highlightButton(this); loadOrderData('E_01.txt')"
@@ -1415,7 +1426,7 @@
               const marker = new Tmapv2.Marker({
                 position: new Tmapv2.LatLng(lat, lon),
                 map: orderMap,
-                label: `Customer ${row[0]}`,
+                label: `고객 ${row[0]}`,
               });
               markers.push(marker); // Save marker
             }
@@ -1700,6 +1711,29 @@
           .catch((error) => {
             console.error("Error:", error);
           });
+
+        // #38 실시간 추가된 데이터가 있다면 NEW 표시하기
+        // Display the "NEW!" indicator
+        var newDataIndicator = document.getElementById("newDataIndicator");
+        newDataIndicator.style.display = "inline";
+
+        // Hide the "NEW!" indicator after 5 seconds
+        setTimeout(() => {
+          newDataIndicator.style.display = "none";
+        }, 5000);
+
+        // #38 실시간 추가된 고객 데이터를 표에 나타내기
+        setTimeout(() => {
+          const reservTime = parseInt(clientOrderData.reservationTime);
+          if (reservTime >= 0 && reservTime < 480) {
+            loadOrderData("E_01.txt");
+          } else if (reservTime >= 480 && reservTime < 960) {
+            loadOrderData("E_02.txt");
+          } else if (reservTime >= 960 && reservTime < 1440) {
+            loadOrderData("E_03.txt");
+          }
+          console.log("//#38 실시간 추가된 고객 데이터 표에 추가 - 2초 딜레이");
+        }, 2000);
       }
 
       // connectToRabbitMQ() 함수를 통해 RabbitMQ 통신 시작
@@ -1818,8 +1852,13 @@
                 map: driverMap,
                 title: `Driver ${driver} - Stop ${index + 1}`,
                 icon: iconUrl,
+                label: `${index + 1}`, //#43-2 Driver의 경로 이동 순서를 각 지점에 label 표시
               });
               routeLayers[driver].push(marker);
+
+              // #43-1 마커마다 label 표시 - 여기부터 =============
+
+              // #43-1 마커마다 label 표시 - 여기까지 =============
             });
 
             // Set map bounds to fit the route
