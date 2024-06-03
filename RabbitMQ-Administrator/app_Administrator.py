@@ -18,6 +18,21 @@
 
 '''
 
+'''
+#60
+cmd 창에 ipconfig를 통해 IPv4 주소를 찾아
+
+1) -> 관리자 페이지는 해당 안 됨
+모바일로 실행 시,
+screen_Client_home.html의 url 주소는 IPv4 주소를 작성하도록
+-> 매일 수정되니까 실행할 때마다 확인 - 수정 - 실행
+-> app_Client.py 파일의 port 번호와 screen_Client_home.html 의 port번호를 동일하게 맞추기
+
+2) RabbitMQ 주소 맞추기
+var ws = new WebSocket("ws://127.0.0.1:15674/ws");  -> 로컬로 연결되어 있는 것
+IPv4 주소를 찾아서 아래와 같이 수정해주기
+예를 들어, 192.168.50.178이라면, var ws = new WebSocket("ws://192.168.50.178:15674/ws");
+'''
 
 
 # from flask import Flask, render_template

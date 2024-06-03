@@ -1,199 +1,202 @@
 <!DOCTYPE html>
 <html lang="ko">
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>전기차충전_eVe</title>
     <link rel="stylesheet" href="https://unpkg.com/ress/dist/ress.min.css" />
-    <link href="https://fonts.googleapis.com/css?family=Philosopher" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css?family=Philosopher"
+      rel="stylesheet"
+    />
     <style>
-        @charset "UTF-8";
-        html {
-            width: 100%;
-            height: 100%;
-            margin: auto;
-        }
-        body {
-            margin: 0;
-            font-family: 'Philosopher', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #f0f0f0;
-        }
-        a {
-            text-decoration: none;
-            color: #000;
-        }
-        header {
-            position: fixed;
-            width: 100%;
-            height: 7%;
-            top: 0;
-            color: black;
-            background-color: white;
-            display: flex;
-        }
-        h3 {
-            padding: 3% 0 1% 0;
-        }
-        .wrapper {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 3% 0;
-        }
-        .main-nav {
-            display: flex;
-            justify-content: space-around;
-            font-size: 1.25rem;
-            text-transform: uppercase;
-            list-style: none;
-            margin-bottom: 4%;
-        }
-        .main-nav li {
-            margin-left: 36px;
-            padding: 4% 0;
-            margin-bottom: 10%;
-            color: #432;
-        }
-        .main-nav a:hover {
-            color: #0bd;
-        }
-        section {
-            margin-top: 10%;
-        }
-        .main-title {
-            text-align: right;
-        }
-        ul {
-            margin: 0;
-            padding: 0;
-        }
-        .selectbox {
-            margin: 150px auto;
-        }
-        .listbox {
-            width: 100%;
-            list-style: none;
-            background: #ffffff;
-            border: 1px solid #c4c4c4;
-            box-sizing: border-box;
-            box-shadow: 4px 4px 14px rgba(0, 0, 0, 0.15);
-            border-radius: 10px;
-            margin-top: 5%;
-            margin-bottom: 5%;
-        }
-        .list {
-            border: none;
-            background-color: #ffffff;
-            font-family: 'Roboto', sans-serif;
-            font-weight: 400;
-            font-size: 14px;
-            line-height: 16px;
-            padding: 7px 10px;
-            margin: 5px 7px;
-            box-sizing: border-box;
-        }
-        .list:focus {
-            background: #f8e4ff;
-            width: 90%;
-            border-radius: 8px;
-            box-sizing: border-box;
-            text-align: left;
-        }
-        #info {
-            background-color: #f2f2f2;
-            height: 60%;
-            width: 80%;
-            max-width: 600px;
-            padding: 50px 20px;
-            margin: auto;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        #info h1 {
-            margin-bottom: 50px;
-            margin-top: 50px;
-        }
-        #info-input {
-            width: 80%;
-            margin-top: 3%;
-            border-radius: 1.25rem;
-            border: 1px #c8c8c8 solid;
-            padding: 0 3%;
-        }
-        #input-name {
-            border-bottom: 1px #c8c8c8 solid;
-        }
-        .input-itme {
-            padding: 5% 2%;
-            display: flex;
-            justify-content: start;
-        }
-        .input-itme svg {
-            padding-right: 3%;
-        }
-        #input-button {
-            width: 80%;
-            height: 2.625rem;
-            margin-top: 10px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-radius: 1.25rem;
-            background: rgba(0, 71, 255, 0.6);
-        }
-        #input-button p {
-            color: #fff;
-            margin: 0;
-        }
-        
+      @charset "UTF-8";
+      html {
+        width: 100%;
+        height: 100%;
+        margin: auto;
+      }
+      body {
+        margin: 0;
+        font-family: "Philosopher", sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f0f0f0;
+      }
+      a {
+        text-decoration: none;
+        color: #000;
+      }
+      header {
+        position: fixed;
+        width: 100%;
+        height: 7%;
+        top: 0;
+        color: black;
+        background-color: white;
+        display: flex;
+      }
+      h3 {
+        padding: 3% 0 1% 0;
+      }
+      .wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 3% 0;
+      }
+      .main-nav {
+        display: flex;
+        justify-content: space-around;
+        font-size: 1.25rem;
+        text-transform: uppercase;
+        list-style: none;
+        margin-bottom: 4%;
+      }
+      .main-nav li {
+        margin-left: 36px;
+        padding: 4% 0;
+        margin-bottom: 10%;
+        color: #432;
+      }
+      .main-nav a:hover {
+        color: #0bd;
+      }
+      section {
+        margin-top: 10%;
+      }
+      .main-title {
+        text-align: right;
+      }
+      ul {
+        margin: 0;
+        padding: 0;
+      }
+      .selectbox {
+        margin: 150px auto;
+      }
+      .listbox {
+        width: 100%;
+        list-style: none;
+        background: #ffffff;
+        border: 1px solid #c4c4c4;
+        box-sizing: border-box;
+        box-shadow: 4px 4px 14px rgba(0, 0, 0, 0.15);
+        border-radius: 10px;
+        margin-top: 5%;
+        margin-bottom: 5%;
+      }
+      .list {
+        border: none;
+        background-color: #ffffff;
+        font-family: "Roboto", sans-serif;
+        font-weight: 400;
+        font-size: 14px;
+        line-height: 16px;
+        padding: 7px 10px;
+        margin: 5px 7px;
+        box-sizing: border-box;
+      }
+      .list:focus {
+        background: #f8e4ff;
+        width: 90%;
+        border-radius: 8px;
+        box-sizing: border-box;
+        text-align: left;
+      }
+      #info {
+        background-color: #f2f2f2;
+        height: 60%;
+        width: 80%;
+        max-width: 600px;
+        padding: 50px 20px;
+        margin: auto;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      #info h1 {
+        margin-bottom: 50px;
+        margin-top: 50px;
+      }
+      #info-input {
+        width: 80%;
+        margin-top: 3%;
+        border-radius: 1.25rem;
+        border: 1px #c8c8c8 solid;
+        padding: 0 3%;
+      }
+      #input-name {
+        border-bottom: 1px #c8c8c8 solid;
+      }
+      .input-itme {
+        padding: 5% 2%;
+        display: flex;
+        justify-content: start;
+      }
+      .input-itme svg {
+        padding-right: 3%;
+      }
+      #input-button {
+        width: 80%;
+        height: 2.625rem;
+        margin-top: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 1.25rem;
+        background: rgba(0, 71, 255, 0.6);
+      }
+      #input-button p {
+        color: #fff;
+        margin: 0;
+      }
     </style>
-</head>
-<body>
-
+  </head>
+  <body>
     <section id="info">
-        <div>
-            <h1>eVe_for driver</h1>
+      <div>
+        <h1>eVe_for driver</h1>
+      </div>
+      <div id="info-input">
+        <div class="input-itme" id="input-name">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="8%"
+            height="8%"
+            viewBox="0 0 41 38"
+            fill="none"
+          >
+            <path
+              d="M20.5 17.2323C18.0849 17.2323 16.0164 16.3879 14.2944 14.6991C12.5724 13.0104 11.7123 10.9827 11.7143 8.61613C11.7143 6.24574 12.5743 4.21616 14.2944 2.5274C16.0144 0.842465 18.083 0 20.5 0C22.917 0 24.9856 0.842465 26.7056 2.5274C28.4257 4.21616 29.2857 6.24574 29.2857 8.61613C29.2857 10.9846 28.4257 13.0123 26.7056 14.6991C24.9856 16.386 22.917 17.2303 20.5 17.2323ZM0 37.9971V33.2726C0 32.0874 0.351429 30.9788 1.05429 29.9468C1.7591 28.9129 2.706 28.1106 3.895 27.54C6.65957 26.2399 9.42512 25.2654 12.1916 24.6163C14.9601 23.9653 17.7296 23.6398 20.5 23.6398C23.2724 23.6398 26.0418 23.9653 28.8084 24.6163C31.5749 25.2673 34.3395 26.2419 37.1021 27.54C38.293 28.1106 39.2399 28.9129 39.9428 29.9468C40.6476 30.9788 41 32.0874 41 33.2726V38L0 37.9971ZM2.92857 35.1251H38.0714V33.2697C38.0714 32.6341 37.8625 32.0357 37.4447 31.4747C37.025 30.9156 36.4451 30.4427 35.7051 30.0559C33.2959 28.9109 30.8105 28.034 28.249 27.4251C25.6914 26.8144 23.1084 26.509 20.5 26.509C17.8936 26.509 15.3106 26.8144 12.751 27.4251C10.1895 28.034 7.7041 28.9109 5.29486 30.0559C4.55295 30.4427 3.9731 30.9156 3.55529 31.4747C3.13748 32.0357 2.92857 32.635 2.92857 33.2726V35.1251ZM20.5 14.3602C22.1107 14.3602 23.4901 13.7973 24.6381 12.6715C25.7861 11.5456 26.3591 10.1938 26.3571 8.61613C26.3571 7.03651 25.7841 5.68377 24.6381 4.55793C23.492 3.43209 22.1127 2.87013 20.5 2.87204C18.8893 2.87204 17.5109 3.43401 16.3649 4.55793C15.2188 5.68186 14.6448 7.03459 14.6429 8.61613C14.6429 10.1958 15.2169 11.5475 16.3649 12.6715C17.5129 13.7954 18.8912 14.3583 20.5 14.3602Z"
+              fill="#C8C8C8"
+            />
+          </svg>
+          <input type="text" placeholder="id" />
         </div>
-        <div id="info-input">
-            <div class="input-itme" id="input-name">
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="8%"
-                    height="8%"
-                    viewBox="0 0 41 38"
-                    fill="none"
-                >
-                    <path
-                        d="M20.5 17.2323C18.0849 17.2323 16.0164 16.3879 14.2944 14.6991C12.5724 13.0104 11.7123 10.9827 11.7143 8.61613C11.7143 6.24574 12.5743 4.21616 14.2944 2.5274C16.0144 0.842465 18.083 0 20.5 0C22.917 0 24.9856 0.842465 26.7056 2.5274C28.4257 4.21616 29.2857 6.24574 29.2857 8.61613C29.2857 10.9846 28.4257 13.0123 26.7056 14.6991C24.9856 16.386 22.917 17.2303 20.5 17.2323ZM0 37.9971V33.2726C0 32.0874 0.351429 30.9788 1.05429 29.9468C1.7591 28.9129 2.706 28.1106 3.895 27.54C6.65957 26.2399 9.42512 25.2654 12.1916 24.6163C14.9601 23.9653 17.7296 23.6398 20.5 23.6398C23.2724 23.6398 26.0418 23.9653 28.8084 24.6163C31.5749 25.2673 34.3395 26.2419 37.1021 27.54C38.293 28.1106 39.2399 28.9129 39.9428 29.9468C40.6476 30.9788 41 32.0874 41 33.2726V38L0 37.9971ZM2.92857 35.1251H38.0714V33.2697C38.0714 32.6341 37.8625 32.0357 37.4447 31.4747C37.025 30.9156 36.4451 30.4427 35.7051 30.0559C33.2959 28.9109 30.8105 28.034 28.249 27.4251C25.6914 26.8144 23.1084 26.509 20.5 26.509C17.8936 26.509 15.3106 26.8144 12.751 27.4251C10.1895 28.034 7.7041 28.9109 5.29486 30.0559C4.55295 30.4427 3.9731 30.9156 3.55529 31.4747C3.13748 32.0357 2.92857 32.635 2.92857 33.2726V35.1251ZM20.5 14.3602C22.1107 14.3602 23.4901 13.7973 24.6381 12.6715C25.7861 11.5456 26.3591 10.1938 26.3571 8.61613C26.3571 7.03651 25.7841 5.68377 24.6381 4.55793C23.492 3.43209 22.1127 2.87013 20.5 2.87204C18.8893 2.87204 17.5109 3.43401 16.3649 4.55793C15.2188 5.68186 14.6448 7.03459 14.6429 8.61613C14.6429 10.1958 15.2169 11.5475 16.3649 12.6715C17.5129 13.7954 18.8912 14.3583 20.5 14.3602Z"
-                        fill="#C8C8C8"
-                    />
-                </svg>
-                <input type="text" placeholder="id" />
-            </div>
-        </div>
-        <div id="input-button" name="done">
-            <form id="idForm" action="#" onsubmit="handleFormSubmit(event)">
-                <button type="submit">
-                    <p>확인</p>
-                </button>
-            </form>
-        </div>
-        <div style="flex-grow: 1;"></div>
+      </div>
+      <div id="input-button" name="done">
+        <form id="idForm" action="#" onsubmit="handleFormSubmit(event)">
+          <button type="submit">
+            <p>확인</p>
+          </button>
+        </form>
+      </div>
+      <div style="flex-grow: 1"></div>
     </section>
     <script>
-        function handleFormSubmit(event) {
-            event.preventDefault();
-            const inputValue = document.querySelector('#input-name input').value;
-            const url = `http://192.168.50.154:5003/driver/${inputValue}`;
-            window.location.href = url;
-        }
+      function handleFormSubmit(event) {
+        event.preventDefault();
+        const inputValue = document.querySelector("#input-name input").value;
+        const url = `http://172.30.1.72:5000/driver/${inputValue}`; // #60 IPv4 주소 설정
+        // #60 위 url 주소는 cmd 창에 ipconfig를 통해 IPv4 주소를 찾아서 - 작성하도록
+        // 매일 수정되니까 실행할 때마다 확인 - 수정 - 실행
+        window.location.href = url;
+      }
     </script>
-</body>
+  </body>
 </html>

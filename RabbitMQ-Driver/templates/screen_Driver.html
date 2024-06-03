@@ -310,12 +310,16 @@
 
         // #19 RabbitMQ 서버 연결
         function connectToRabbitMQ() {
-          var ws = new WebSocket("ws://127.0.0.1:15674/ws");
+          // var ws = new WebSocket("ws://127.0.0.1:15674/ws");
+          var ws = new WebSocket("ws://172.30.1.72:15674/ws"); // #60 IPv4 주소 설정
           stompClient = Stomp.over(ws);
 
           stompClient.connect(
-            "guest",
-            "guest",
+            // #60 user로 설정
+            // "guest",
+            // "guest",
+            "user",
+            "user",
             function (frame) {
               console.log("Connected: " + frame);
             },
