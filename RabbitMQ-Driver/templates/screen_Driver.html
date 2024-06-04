@@ -49,63 +49,16 @@ getDriverPos 함수의 실시간 위치 받아오는 부분에 임의의 경로 
     <!-- <script src="https://apis.openapi.sk.com/tmap/js?version=2&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu"></script> -->
     <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu"></script>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@100..900&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- #45 디자인 수정 -->
     <style>
       /* #35 모바일 웹 화면으로 보이도록 */
-      @media (max-width: 600px) {
-        .container {
-          display: grid;
-        }
-        .sidebar {
-          width: 90%;
-          border-radius: 0;
-          border: none;
-          border-bottom: 3px solid #1a7416;
-        }
-        .item {
-          height: 1vh;
-          padding: 3px;
-        }
-        #arrivalTime {
-          height: 0.2px;
-        }
-        #delivery-info {
-          height: 10px;
-        }
-        #time-info {
-          height: 1px;
-        }
-        .fixed-text {
-          height: 1vh;
-          padding: 3px;
-        }
-        .map {
-          flex: none;
-          height: 50vh;
-          font-size: 24px;
-        }
-        .header {
-          font-size: 20px;
-          margin-bottom: 15px;
-        }
-        .service-application {
-          margin-bottom: 15px;
-        }
-        .service-detail {
-          margin: 5px 0;
-          padding: 5px;
-        }
-        .status-indicators {
-          gap: 5px;
-        }
-        .status-indicator {
-          gap: 5px;
-          padding: 5px;
-        }
-        .status-indicator .circle {
-          width: 15px;
-          height: 15px;
-        }
-      }
       body {
         margin: 0;
         font-family: Arial, sans-serif;
@@ -116,13 +69,11 @@ getDriverPos 함수의 실시간 위치 받아오는 부분에 임의의 경로 
       }
       .sidebar {
         width: 300px;
-        background-color: #f0f0f0;
+        background-color: #f1f1f1;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
         padding: 20px;
-        border: 3px solid #bd3535;
-        border-radius: 20px;
       }
       .map {
         flex: 1;
@@ -150,7 +101,6 @@ getDriverPos 함수의 실시간 위치 받아오는 부분에 임의의 경로 
         gap: 10px;
         background-color: white;
         padding: 20px;
-        border: 1px solid #004785;
         border-radius: 10px;
         margin-bottom: 20px;
       }
@@ -160,8 +110,7 @@ getDriverPos 함수의 실시간 위치 받아오는 부분에 임의의 경로 
         gap: 10px;
         background-color: white;
         padding: 20px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
+        border-radius: 10px;
         margin-bottom: 20px;
       }
       .time-info div {
@@ -204,6 +153,62 @@ getDriverPos 함수의 실시간 위치 받아오는 부분에 임의의 경로 
       .button:disabled {
         background-color: #cccccc;
         cursor: not-allowed;
+      }
+      @media (max-width: 600px) {
+        .container {
+          display: grid;
+        }
+        .sidebar {
+          width: 90%;
+          border-radius: 0;
+          border: none;
+          border-bottom: 3px solid #1a7416;
+        }
+        .item {
+          height: 1vh;
+          padding: 3px;
+        }
+        #arrivalTime {
+          height: 0.2px;
+          width: 90%;
+        }
+        #delivery-info {
+          height: 10px;
+        }
+        #time-info {
+          height: 1px;
+        }
+        .fixed-text {
+          height: 1vh;
+          padding: 3px;
+        }
+        .map {
+          flex: none;
+          height: 50vh;
+          font-size: 24px;
+        }
+        .header {
+          font-size: 20px;
+          margin-bottom: 15px;
+        }
+        .service-application {
+          margin-bottom: 15px;
+        }
+        .service-detail {
+          margin: 5px 0;
+          padding: 5px;
+        }
+        .status-indicators {
+          gap: 5px;
+        }
+        .status-indicator {
+          gap: 5px;
+          padding: 5px;
+        }
+        .status-indicator .circle {
+          width: 15px;
+          height: 15px;
+        }
       }
     </style>
   </head>

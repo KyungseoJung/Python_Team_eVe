@@ -63,60 +63,85 @@
     <!-- //#43 -->
     <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=5RB8KXlDuB6uLZGhugCqS9OJMViZ73P93dRPbphu"></script>
 
+    <!-- #45 디자인 수정 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@100..900&display=swap"
+      rel="stylesheet"
+    />
+
     <style>
       /* //#27
       Body나 HTML 태그의 마진 또는 패딩: 기본적으로 브라우저는 HTML 페이지의 body 태그에 마진이나 패딩을 자동으로 추가하기 때문에 공백이 발생할 수 있음
       -> 이를 제거하려면 CSS에서 body와 html 태그의 마진과 패딩을 0으로 설정해야 함.
       불필요한 태그나 공백: HTML 코드 내에 불필요한 공백이나 태그가 있을 경우 이를 정리함. */
+      .noto-sans-kr {
+        font-family: "Noto Sans KR", sans-serif;
+        font-optical-sizing: auto;
+        font-weight: 500;
+        font-style: normal;
+      }
+
       html,
       body {
         margin: 0;
         padding: 0;
+        width: 100%;
       }
       body {
-        font-family: Arial, sans-serif;
+        font-family: Noto Sans KR, sans-serif;
       }
       .navbar {
         /* //#27 불필요한 공백 제거 */
         margin-top: 0;
         padding-top: 0;
 
-        background: #333;
+        background: #ffffff;
         padding: 10px 40px;
-        color: white;
-        text-align: right;
+        color: #000000;
+        text-align: left;
+        border-bottom: #000000 1px solid;
       }
       .button {
-        color: white;
-        background: gray;
+        color: #000000;
+        background: #ffffff;
         padding: 10px 40px;
         border: none;
         cursor: pointer;
-        margin-right: 10px;
-        font-size: 17px; /* Larger font size */
+        margin-right: 2px;
+        font-family: Noto Sans KR, sans-serif;
+        font-size: 15px; /* Larger font size */
+        font-weight: 500;
+        border-radius: 3%;
       }
       .button.active {
-        background: red;
+        background: #e1e7fa;
       }
+      .button:hover {
+        background: #e1e7fa;
+      }
+
       /* ============= //#28 [주문 확인] 페이지 - 여기부터 =============--> */
 
+      #title_order_check {
+        margin-left: 1.2cm;
+      }
       .button-check {
         color: black;
-        background: rgb(164, 196, 255);
-        border: 1.5px solid #000000;
+        background: #ffffff;
         padding: 10px 40px;
         cursor: pointer;
         font-size: 20px;
-        border-radius: 5px;
+        border: none;
       }
       .button-check.active {
-        background: rgb(18, 23, 48);
-        color: white;
+        background: #e1e7fa;
+        color: black;
       }
       .button-calculate {
         color: white;
         background: #000000; /* Dark grey background */
-        border: 1.5px solid #ffffff;
         padding: 10px 20px; /* Larger buttons */
         cursor: pointer;
         font-size: 20px; /* Larger font size */
@@ -126,20 +151,15 @@
         /* //#27 불필요한 공백 제거 */
         margin-top: 0;
         padding-top: 0;
-
         padding: 20px;
         display: flex;
         /* //#33-2 추가 */
         flex-direction: column; /* Stack vertically */
         justify-content: space-between; /* Distribute space */
-        align-items: stretch; /* Align items to stretch full width */
-
-        width: 100%; /* Ensures the container takes full width */
-        /* max-width: 1200px;  */
-        /* Adjust this value based on your design requirements */
-        margin: 0 auto; /* Centers the content block horizontally */
-
-        /* justify-content: space-around; */
+        align-items: stretch;
+        width: 100%;
+        height: 100%;
+        margin: 0 auto;
       }
       /* //#33-2 */
       .top-panels {
@@ -166,52 +186,44 @@
         display: none;
         flex: 1;
         margin: 0 10px;
-        border: 1px solid #ccc;
         padding: 10px;
       }
       .visible {
         display: flex;
       }
-      /* table,
-      th,
-      td {
-        border: 1px solid black;
-        border-collapse: collapse;
-        padding: 8px;
-      } */
       table {
-        border: 1px solid #006ab1; /* Light blue border */
-
         width: 100%; /* Full width to use available space */
         border-collapse: collapse; /* Ensures borders are merged */
       }
 
       th,
       td {
-        border: 1px solid #2c5282; /* Navy blue border for readability */
+        border: 1px solid gray; /* Navy blue border for readability */
         text-align: left; /* Align text to the left */
         padding: 12px 15px; /* Comfortable padding around text */
         word-wrap: break-word; /* Prevents text overflow */
+        color: #000000;
       }
 
       th {
-        background-color: #2980b9; /* Slightly lighter navy color for headers */
+        background-color: #ffffff; /* Slightly lighter navy color for headers */
         font-weight: bold; /* Make header fonts bold */
+        font-size: 13px;
       }
 
       tr:nth-child(odd) {
-        background-color: #34495e; /* Zebra striping for rows */
+        background-color: #eaeefc; /* Zebra striping for rows */
       }
 
       tr:hover {
-        background-color: #3498db; /* Highlight on hover for better interaction feedback */
+        background-color: #eaeefc; /* Highlight on hover for better interaction feedback */
       }
 
       /* Specifically target the street address column for wider display */
       td:last-child,
       th:last-child {
         min-width: 200px; /* Minimum width */
-        max-width: 300px; /* Maximum width */
+        max-width: 400px; /* Maximum width */
       }
 
       .hidden {
@@ -247,10 +259,10 @@
       /* #31 디자인 추가 */
       .table-container {
         overflow-x: auto; /* Allows horizontal scrolling if the table is too wide */
-        max-width: 700px;
-        max-height: 400px; /* Set a maximum height */
+        max-width: 1000px;
+        max-height: 6d00px; /* Set a maximum height */
 
-        background-color: #2c3e50; /* Dark navy background */
+        background-color: #ffffff; /* Dark navy background */
         color: #ecf0f1; /* White text for better readability */
         border-radius: 8px; /* Rounded corners */
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
