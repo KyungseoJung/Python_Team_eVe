@@ -275,42 +275,7 @@ getDriverPos 함수의 실시간 위치 받아오는 부분에 임의의 경로 
         var stepIndex = 0;
         var intermediateLocation;
 
-        // =========== #50 시간대 2 데이터 ===========
-        switch (parseInt("{{ driverId }}")) {
-          case 1:
-            startLocation = {
-              lat: 37.49799541773126,
-              lng: 127.02764967301626,
-            }; // depot 지점 넣음
-            endLocation = { lat: 37.510109, lng: 127.018976 }; // 1번째 가야 하는 위치 넣음
-            break;
-          case 2:
-            startLocation = {
-              lat: 37.49799541773126,
-              lng: 127.02764967301626,
-            }; // depot 지점 넣음
-            endLocation = { lat: 37.499202, lng: 127.031602 }; // 1번째 가야 하는 위치 넣음
-
-            break;
-          case 3:
-            startLocation = {
-              lat: 37.49799541773126,
-              lng: 127.02764967301626,
-            }; // depot 지점 넣음
-            endLocation = { lat: 37.504656, lng: 127.035811 }; // 1번째 가야 하는 위치 넣음
-
-            break;
-          case 4:
-            startLocation = {
-              lat: 37.49799541773126,
-              lng: 127.02764967301626,
-            }; // depot 지점 넣음
-            endLocation = { lat: 37.504656, lng: 127.035811 }; // 1번째 가야 하는 위치 넣음
-
-            break;
-        }
-
-        // =========== #50 시간대 1 데이터 ===========
+        // =========== #50 1번째 시간대 1 데이터 ===========
         // switch (parseInt("{{ driverId }}")) {
         //   case 1:
         //     startLocation = {
@@ -343,6 +308,76 @@ getDriverPos 함수의 실시간 위치 받아오는 부분에 임의의 경로 
         //     endLocation = { lat: 37.504656, lng: 127.035811 }; // 1번째 가야 하는 위치 넣음
         //     break;
         // }
+
+        // =========== #50 2번째 시간대 2 데이터 ===========
+        // switch (parseInt("{{ driverId }}")) {
+        //   case 1:
+        //     startLocation = {
+        //       lat: 37.49799541773126,
+        //       lng: 127.02764967301626,
+        //     }; // depot 지점 넣음
+        //     endLocation = { lat: 37.510109, lng: 127.018976 }; // 1번째 가야 하는 위치 넣음
+        //     break;
+        //   case 2:
+        //     startLocation = {
+        //       lat: 37.49799541773126,
+        //       lng: 127.02764967301626,
+        //     }; // depot 지점 넣음
+        //     endLocation = { lat: 37.499202, lng: 127.031602 }; // 1번째 가야 하는 위치 넣음
+
+        //     break;
+        //   case 3:
+        //     startLocation = {
+        //       lat: 37.49799541773126,
+        //       lng: 127.02764967301626,
+        //     }; // depot 지점 넣음
+        //     endLocation = { lat: 37.504656, lng: 127.035811 }; // 1번째 가야 하는 위치 넣음
+
+        //     break;
+        //   case 4:
+        //     startLocation = {
+        //       lat: 37.49799541773126,
+        //       lng: 127.02764967301626,
+        //     }; // depot 지점 넣음
+        //     endLocation = { lat: 37.504656, lng: 127.035811 }; // 1번째 가야 하는 위치 넣음
+
+        //     break;
+        // }
+
+        // =========== #50 3번째 시간대 3 데이터 ===========
+        switch (parseInt("{{ driverId }}")) {
+          case 1:
+            startLocation = {
+              lat: 37.49799541773126,
+              lng: 127.02764967301626,
+            }; // depot 지점 넣음
+            endLocation = { lat: 37.493748, lng: 127.023185 }; // 1번째 가야 하는 위치 넣음
+            break;
+          case 2:
+            startLocation = {
+              lat: 37.49799541773126,
+              lng: 127.02764967301626,
+            }; // depot 지점 넣음
+            endLocation = { lat: 37.504656, lng: 127.030199 }; // 1번째 가야 하는 위치 넣음
+
+            break;
+          case 3:
+            startLocation = {
+              lat: 37.49799541773126,
+              lng: 127.02764967301626,
+            }; // depot 지점 넣음
+            endLocation = { lat: 37.493748, lng: 127.023185 }; // 1번째 가야 하는 위치 넣음
+
+            break;
+          case 4:
+            startLocation = {
+              lat: 37.49799541773126,
+              lng: 127.02764967301626,
+            }; // depot 지점 넣음
+            endLocation = { lat: 37.493748, lng: 127.034408 }; // 1번째 가야 하는 위치 넣음
+
+            break;
+        }
 
         var driverId = "{{ driverId }}"; //#33 Jinja2 템플릿 구문을 사용하여 변수 값을 직접 받아오기.
         console.log("//#22 Flask로부터 전달받은 driverId 값: " + driverId);
