@@ -192,7 +192,7 @@
       function handleFormSubmit(event) {
         event.preventDefault();
         const inputValue = document.querySelector("#input-name input").value;
-        const url = `http://172.30.1.72:5000/driver/${inputValue}`; // #60 IPv4 주소 설정
+        const url = `http://192.168.50.178:5000/driver/${inputValue}`; // #60 IPv4 주소 설정
         // #60 위 url 주소는 cmd 창에 ipconfig를 통해 IPv4 주소를 찾아서 - 작성하도록
         // 매일 수정되니까 실행할 때마다 확인 - 수정 - 실행
         window.location.href = url;
