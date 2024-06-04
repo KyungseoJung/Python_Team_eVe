@@ -23,6 +23,7 @@
 #35 고객 화면과 Driver 화면에서 코드 추가 - 모바일 웹 화면으로 확인할 때, 페이지 연결 및 구조가 적절히 보이도록
 #42 각 배달원이 무슨 번호의 배터리를 배달 or 수거해야 하는지 표시
 #44 배달원 화면에서 지도에 각 배달원이 가야 하는 경로 표시
+#46 Driver 화면에 csv파일로부터 데이터를 받아와서 고객이 입력한 차량정보와 상세주소가 나타나도록
 
 #50 임의의 경로 값 넣어서 움직이는 배달기사 표현하기
 "/topic/locationUpdate" + driverId 주소와 "/topic/driverLocation" + driverId 주소에 각각 임의의 경로 값 넣기
@@ -778,7 +779,18 @@ getDriverPos 함수의 실시간 위치 받아오는 부분에 임의의 경로 
             if (xhr.status === 200) {
               var response = JSON.parse(xhr.responseText);
               var address = response.addressInfo.fullAddress;
-              arrivalAddressDisplay.innerText = address;
+
+              // #46 Driver 화면에 csv파일로부터 데이터를 받아와서 고객이 입력한 차량정보와 상세주소가 나타나도록
+              // arrivalAddressDisplay.innerText = address;
+              arrivalAddressDisplay.innerText =
+                address +
+                "\n" +
+                "\n" +
+                deliveries[currentIndex].detail_address +
+                "\n" +
+                "\n 차량 번호: " +
+                deliveries[currentIndex].car_num;
+
               //   console.log("//#17-4 도로명 주소로 변환 및 표시");
 
               // #33-2 여기서 RabbitMQ 송신할까?
