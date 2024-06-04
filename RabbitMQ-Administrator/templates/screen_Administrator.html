@@ -38,6 +38,7 @@
 
 #38 실시간 추가된 고객 데이터가 있다면 NEW 표시를 하고, 해당 데이터 테이블을 띄우기
 
+#46 고객이 입력한 차량정보와 상세주소가 RabbitMQ를 통해 관리자 화면으로 수신되고, static 폴더 안의 txt파일에 저장되도록
 -->
 
 <!DOCTYPE html>
@@ -260,7 +261,7 @@
       .table-container {
         overflow-x: auto; /* Allows horizontal scrolling if the table is too wide */
         max-width: 1000px;
-        max-height: 6d00px; /* Set a maximum height */
+        max-height: 600px; /* Set a maximum height */
 
         background-color: #ffffff; /* Dark navy background */
         color: #ecf0f1; /* White text for better readability */
@@ -882,7 +883,9 @@
                 parsingCustomers = true;
               } else if (parsingCustomers) {
                 const parts = line.split(/\s+/);
-                if (parts.length === 7) {
+                // #46 고객이 입력한 차량정보와 상세주소가 RabbitMQ를 통해 관리자 화면으로 수신되고, static 폴더 안의 txt파일에 저장되도록
+                // if (parts.length === 7) {
+                if (parts.length === 8) {
                   // 기존 헤더의 길이에 맞춤
                   rows.push(parts);
                 }
@@ -1115,7 +1118,10 @@
                 parsingCustomers = true;
               } else if (parsingCustomers) {
                 const parts = line.split(/\s+/);
-                if (parts.length === 7) {
+                // #46 고객이 입력한 차량정보와 상세주소가 RabbitMQ를 통해 관리자 화면으로 수신되고, static 폴더 안의 txt파일에 저장되도록
+                // if (parts.length === 7) {
+
+                if (parts.length === 8) {
                   // Adjust to match the length of the existing headers
                   rows.push(parts);
                 }
@@ -1311,7 +1317,10 @@
               "DEMAND",
               "READY TIME",
               "DUE DATE",
-              "SERVICE TIME",
+              // #46 고객이 입력한 차량정보와 상세주소가 RabbitMQ를 통해 관리자 화면으로 수신되고, static 폴더 안의 txt파일에 저장되도록
+              // "SERVICE TIME",
+              "CAR NUM",
+              "DETAIL ADDRESS",
             ];
             const rows = [];
             let parsingCustomers = false;
@@ -1636,13 +1645,14 @@
           //   "//#37 고객 주문 데이터 - 예약 시작 시간: " +
           //     parseInt(clientOrderData.reservationTime)
           // );
-          // console.log(
-          //   "//#37 고객 주문 데이터 - 차량번호: " + clientOrderData.carNumber
-          // );
-          // console.log(
-          //   "//#37 고객 주문 데이터 - 상세 주소: " +
-          //     clientOrderData.detailAddress
-          // );
+          console.log(
+            "//#37 #46 고객 주문 데이터 - 차량번호: " +
+              clientOrderData.carNumber
+          );
+          console.log(
+            "//#37 #46 고객 주문 데이터 - 상세 주소: " +
+              clientOrderData.detailAddress
+          );
 
           // #38 RabbitMQ를 통해 고객 화면으로부터 수신한 주문 정보를 txt 파일에 추가(서비스 요청 시간에 따라 각각 다른 파일에 저장)
           appendDataToFile(clientOrderData);
@@ -1706,7 +1716,18 @@
           demand: parseInt(clientOrderData.chargeAmount),
           ready_time: parseInt(clientOrderData.reservationTime),
           due_date: parseInt(clientOrderData.reservationTime) + 60, // Ensure dueDate is included in clientOrderData
+          car_num: String(clientOrderData.carNumber), // Ensure car_num is a string
+          detail_address: String(clientOrderData.detailAddress), // Ensure detail_address is a string
+
+          // #46 고객이 입력한 차량정보와 상세주소가 RabbitMQ를 통해 관리자 화면으로 수신되고, static 폴더 안의 txt파일에 저장되도록
         };
+
+        console.log(
+          "//#46 appendDataToFile: " +
+            String(clientOrderData.carNumber) +
+            ", " +
+            String(clientOrderData.detailAddress)
+        );
 
         // Send data to the server using AJAX
         fetch("/append_data", {
@@ -2213,7 +2234,10 @@
               "DEMAND",
               "READY TIME",
               "DUE DATE",
-              "SERVICE TIME",
+              // #46 고객이 입력한 차량정보와 상세주소가 RabbitMQ를 통해 관리자 화면으로 수신되고, static 폴더 안의 txt파일에 저장되도록
+              // "SERVICE TIME",
+              "CAR NUM",
+              "DETAIL ADDRESS",
             ];
             const rows = [];
             let parsingCustomers = false;

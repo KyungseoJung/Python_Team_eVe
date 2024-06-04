@@ -15,6 +15,7 @@
 # - 서비스 요청 시간이 960~1380인 경우: E_03.txt 파일
 
 # //#43 현재 시간대의 배달기사 경로 표시
+# //#46 고객이 입력한 차량정보와 상세주소가 RabbitMQ를 통해 관리자 화면으로 수신되고, static 폴더 안의 txt파일에 저장되도록
 
 '''
 
@@ -58,11 +59,18 @@ def append_data():
     data = request.get_json()
 
     try:
+        print("//#46 Received data:", data)
         xcoord = float(data['xcoord'])
         ycoord = float(data['ycoord'])
         demand = int(data['demand'])
         ready_time = int(data['ready_time'])
         due_date = int(data['due_date'])
+
+# //#46 고객이 입력한 차량정보와 상세주소가 RabbitMQ를 통해 관리자 화면으로 수신되고, static 폴더 안의 txt파일에 저장되도록
+        car_num = str(data['car_num'])
+        detail_address = str(data['detail_address'])
+
+        print("//#46 Parsed data:", xcoord, ycoord, demand, ready_time, due_date, car_num, detail_address)
 
         # 신청한 시간대별로 파일 위치 지정
         # - 서비스 요청 시간이 0~420인 경우: E_01.txt 파일
@@ -74,15 +82,25 @@ def append_data():
             file_name = 'static/orderData/E_02.txt'
         elif 960 <= ready_time <= 1380:
             file_name = 'static/orderData/E_03.txt'
+        
+# //#46 고객이 입력한 차량정보와 상세주소가 RabbitMQ를 통해 관리자 화면으로 수신되고, static 폴더 안의 txt파일에 저장되도록
+        # append_customer_to_file(file_name, xcoord, ycoord, demand, ready_time, due_date)
+        append_customer_to_file(file_name, xcoord, ycoord, demand, ready_time, due_date, car_num, detail_address)
+        
+        print("//#46 Data appended to file:", file_name)
 
-        append_customer_to_file(file_name, xcoord, ycoord, demand, ready_time, due_date)
 
         return jsonify({"status": "success"}), 200
-    except ValueError:
+    except ValueError as e:
+        print("//#46 Error:", str(e))
+
         return jsonify({"status": "error", "message": "Invalid data types"}), 400
 
-def append_customer_to_file(file_name, xcoord, ycoord, demand, ready_time, due_date):
-    with open(file_name, 'r') as file:
+# //#46 고객이 입력한 차량정보와 상세주소가 RabbitMQ를 통해 관리자 화면으로 수신되고, static 폴더 안의 txt파일에 저장되도록
+# def append_customer_to_file(file_name, xcoord, ycoord, demand, ready_time, due_date):
+def append_customer_to_file(file_name, xcoord, ycoord, demand, ready_time, due_date, car_num, detail_address):
+    # with open(file_name, 'r') as file:    // #46
+    with open(file_name, 'r',  encoding='utf-8') as file:
         lines = file.readlines()
         customer_lines = [line for line in lines if line.strip() and line.split()[0].isdigit()]
         last_customer_line = customer_lines[-1]
@@ -90,10 +108,20 @@ def append_customer_to_file(file_name, xcoord, ycoord, demand, ready_time, due_d
 
     new_cust_no = last_cust_no + 1
 
-    new_customer_info = f"{new_cust_no:<6} {xcoord:<20} {ycoord:<20} {demand:<8} {ready_time:<10} {due_date:<10} 0\n"
+    # //#46 고객이 입력한 차량정보와 상세주소가 RabbitMQ를 통해 관리자 화면으로 수신되고, static 폴더 안의 txt파일에 저장되도록
+    # new_customer_info = f"{new_cust_no:<6} {xcoord:<20} {ycoord:<20} {demand:<8} {ready_time:<10} {due_date:<10} 0\n"
+    new_customer_info = f"{new_cust_no:<6} {xcoord:<20} {ycoord:<20} {demand:<8} {ready_time:<10} {due_date:<10} {car_num:<10} {detail_address}\n"
+    # new_customer_info = f"{new_cust_no:<6} {xcoord:<20} {ycoord:<20} {demand:<8} {ready_time:<10} {due_date:<10} {car_num:<20} {detail_address:<20} 0\n".encode('cp949', errors='ignore')
 
-    with open(file_name, 'a') as file:
+    
+
+    with open(file_name, 'a', encoding='utf-8') as file:
+
+        # new_customer_info = new_customer_info.encode('cp949', errors='ignore').decode('cp949')  #//#46 UTF-8 데이터를 CP949로 변환
+
         file.write(new_customer_info)
+    print(f"//#46 Data written to file {file_name}: {xcoord},{ycoord},{demand},{ready_time},{due_date},{car_num},{detail_address}")
+
 
 # //#38 RabbitMQ를 통해 고객 화면으로부터 수신한 주문 정보를 txt 파일에 추가 - 여기까지
 #===================================================================================================
