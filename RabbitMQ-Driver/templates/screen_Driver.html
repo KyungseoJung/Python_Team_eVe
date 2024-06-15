@@ -351,39 +351,39 @@ getDriverPos 함수의 실시간 위치 받아오는 부분에 임의의 경로 
         // }
 
         // =========== #50 3번째 시간대 3 데이터 ===========
-        switch (parseInt("{{ driverId }}")) {
-          case 1:
-            startLocation = {
-              lat: 37.49799541773126,
-              lng: 127.02764967301626,
-            }; // depot 지점 넣음
-            endLocation = { lat: 37.493748, lng: 127.023185 }; // 1번째 가야 하는 위치 넣음
-            break;
-          case 2:
-            startLocation = {
-              lat: 37.49799541773126,
-              lng: 127.02764967301626,
-            }; // depot 지점 넣음
-            endLocation = { lat: 37.504656, lng: 127.030199 }; // 1번째 가야 하는 위치 넣음
+        // switch (parseInt("{{ driverId }}")) {
+        //   case 1:
+        //     startLocation = {
+        //       lat: 37.49799541773126,
+        //       lng: 127.02764967301626,
+        //     }; // depot 지점 넣음
+        //     endLocation = { lat: 37.493748, lng: 127.023185 }; // 1번째 가야 하는 위치 넣음
+        //     break;
+        //   case 2:
+        //     startLocation = {
+        //       lat: 37.49799541773126,
+        //       lng: 127.02764967301626,
+        //     }; // depot 지점 넣음
+        //     endLocation = { lat: 37.504656, lng: 127.030199 }; // 1번째 가야 하는 위치 넣음
 
-            break;
-          case 3:
-            startLocation = {
-              lat: 37.49799541773126,
-              lng: 127.02764967301626,
-            }; // depot 지점 넣음
-            endLocation = { lat: 37.493748, lng: 127.023185 }; // 1번째 가야 하는 위치 넣음
+        //     break;
+        //   case 3:
+        //     startLocation = {
+        //       lat: 37.49799541773126,
+        //       lng: 127.02764967301626,
+        //     }; // depot 지점 넣음
+        //     endLocation = { lat: 37.493748, lng: 127.023185 }; // 1번째 가야 하는 위치 넣음
 
-            break;
-          case 4:
-            startLocation = {
-              lat: 37.49799541773126,
-              lng: 127.02764967301626,
-            }; // depot 지점 넣음
-            endLocation = { lat: 37.493748, lng: 127.034408 }; // 1번째 가야 하는 위치 넣음
+        //     break;
+        //   case 4:
+        //     startLocation = {
+        //       lat: 37.49799541773126,
+        //       lng: 127.02764967301626,
+        //     }; // depot 지점 넣음
+        //     endLocation = { lat: 37.493748, lng: 127.034408 }; // 1번째 가야 하는 위치 넣음
 
-            break;
-        }
+        //     break;
+        // }
 
         var driverId = "{{ driverId }}"; //#33 Jinja2 템플릿 구문을 사용하여 변수 값을 직접 받아오기.
         console.log("//#22 Flask로부터 전달받은 driverId 값: " + driverId);
@@ -647,56 +647,56 @@ getDriverPos 함수의 실시간 위치 받아오는 부분에 임의의 경로 
         }
 
         // #50 위치 계산 함수
-        function calculateIntermediateLocation(start, end, step, totalSteps) {
-          return {
-            lat: start.lat + (end.lat - start.lat) * (step / totalSteps),
-            lng: start.lng + (end.lng - start.lng) * (step / totalSteps),
-          };
-        }
+        // function calculateIntermediateLocation(start, end, step, totalSteps) {
+        //   return {
+        //     lat: start.lat + (end.lat - start.lat) * (step / totalSteps),
+        //     lng: start.lng + (end.lng - start.lng) * (step / totalSteps),
+        //   };
+        // }
 
         // #50 실시간 실제 위치 값 -> 연습할 땐, 임의의 값 넣기
-        function getTemporaryDriverPos() {
-          if (stepIndex <= totalSteps) {
-            intermediateLocation = calculateIntermediateLocation(
-              startLocation,
-              endLocation,
-              stepIndex,
-              totalSteps
-            );
+        // function getTemporaryDriverPos() {
+        //   if (stepIndex <= totalSteps) {
+        //     intermediateLocation = calculateIntermediateLocation(
+        //       startLocation,
+        //       endLocation,
+        //       stepIndex,
+        //       totalSteps
+        //     );
 
-            stepIndex++;
-          } else {
-            clearInterval(positionInterval);
-          }
+        //     stepIndex++;
+        //   } else {
+        //     clearInterval(positionInterval);
+        //   }
 
-          var userLocation = new Tmapv2.LatLng(
-            intermediateLocation.lat,
-            intermediateLocation.lng
-          );
-          // 이미 marker가 있는지 확인
-          if (marker) {
-            // 이미 존재한다면, 그냥 기존에 있던 마커의 위치만 바꾸기
-            marker.setPosition(userLocation);
-          } else {
-            // 이미 존재하는 marker가 없다면, marker를 새로 생성
-            marker = new Tmapv2.Marker({
-              position: userLocation,
-              map: driverMap,
-              icon: "/static/image/ElectricTruck.png",
-            });
-          }
+        //   var userLocation = new Tmapv2.LatLng(
+        //     intermediateLocation.lat,
+        //     intermediateLocation.lng
+        //   );
+        //   // 이미 marker가 있는지 확인
+        //   if (marker) {
+        //     // 이미 존재한다면, 그냥 기존에 있던 마커의 위치만 바꾸기
+        //     marker.setPosition(userLocation);
+        //   } else {
+        //     // 이미 존재하는 marker가 없다면, marker를 새로 생성
+        //     marker = new Tmapv2.Marker({
+        //       position: userLocation,
+        //       map: driverMap,
+        //       icon: "/static/image/ElectricTruck.png",
+        //     });
+        //   }
 
-          driverMap.setCenter(userLocation);
-          console.log("//#50 표시하는 임의의 위치 데이터: ", userLocation);
-          sendPosToClientRabbitMQ(
-            intermediateLocation.lat,
-            intermediateLocation.lng
-          );
-          sendPosToAdministratorRabbitMQ(
-            intermediateLocation.lat,
-            intermediateLocation.lng
-          );
-        }
+        //   driverMap.setCenter(userLocation);
+        //   console.log("//#50 표시하는 임의의 위치 데이터: ", userLocation);
+        //   sendPosToClientRabbitMQ(
+        //     intermediateLocation.lat,
+        //     intermediateLocation.lng
+        //   );
+        //   sendPosToAdministratorRabbitMQ(
+        //     intermediateLocation.lat,
+        //     intermediateLocation.lng
+        //   );
+        // }
 
         // #50 각 Driver마다 다른 임의의 경로를 가지도록
         // function setTemporaryDriverRoute(id) {
@@ -737,6 +737,7 @@ getDriverPos 함수의 실시간 위치 받아오는 부분에 임의의 경로 
         //#23 Papa.parse 기존 위치 -> 맨 위로 이동
 
         // #33-4 특정 위도, 경도 값을 받으면, 도로명주소를 콜백으로 뱉음
+
         function getAddress(latitude, longitude, callback) {
           //
           var xhr = new XMLHttpRequest();
@@ -1013,12 +1014,12 @@ getDriverPos 함수의 실시간 위치 받아오는 부분에 임의의 경로 
           });
 
           // connectToRabbitMQ(); // -> script 마지막 부분에 실행함
-          // setInterval(getDriverPos, 1000); // Get User Position every 1 seconds // 1초에 한번씩 위치 받기 -> 지도 중심 맞추기
+          setInterval(getDriverPos, 1000); // Get User Position every 1 seconds // 1초에 한번씩 위치 받기 -> 지도 중심 맞추기
 
           // setInterval(getTemporaryDriverPos, 1000); // Get User Position every 1 seconds // 1초에 한번씩 위치 받기 -> 지도 중심 맞추기  // #50 임의의 경로 값 표시
-          setTimeout(() => {
-            positionInterval = setInterval(getTemporaryDriverPos, 500); // 0.5초 간격으로 위치 업데이트
-          }, 5000); // #50 쉽게 촬영하기 위해 5초 지연 두고 움직이기 시작
+          // setTimeout(() => {
+          //   positionInterval = setInterval(getTemporaryDriverPos, 500); // 0.5초 간격으로 위치 업데이트
+          // }, 5000); // #50 쉽게 촬영하기 위해 5초 지연 두고 움직이기 시작
         }
 
         showNextRoute();
