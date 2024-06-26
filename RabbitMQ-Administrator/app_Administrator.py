@@ -142,6 +142,7 @@ def append_customer_to_file(file_name, xcoord, ycoord, demand, ready_time, due_d
 # //#29 배터리 강화학습 코드 통합 - 여기부터
 
 # Define Dash layout # //#0604 09:00 대쉬보드 업데이트 - 기존 강화학습 대쉬보드 삭제
+subprocess.run(["python", "data_gen.py"])
 dash_app = Dash(__name__, server=app, url_base_pathname='/dash/')
 # Load initial data
 battery_dfs = pd.read_csv('./data/batt1.csv')
